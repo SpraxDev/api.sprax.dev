@@ -19,7 +19,7 @@ export default class QuestDbClient implements Disposable {
     }
   }
 
-  async pushImportQueueSize(itemsQueued: number, itemsErrored: number): Promise<void> {
+  async pushImportQueueSize(itemsQueued: number, itemsErrored: number, itemsNotQueued: number): Promise<void> {
     if (this.senderPromise == null) {
       return;
     }
@@ -29,7 +29,8 @@ export default class QuestDbClient implements Disposable {
     sender
       .table('sprax_api_import_queue_stats')
       .intColumn('queued', itemsQueued)
-      .intColumn('errored', itemsErrored);
+      .intColumn('errored', itemsErrored)
+      .intColumn('stateNotQueued', itemsNotQueued);
     await sender.at(Date.now(), 'ms');
 
     await sender.flush();
