@@ -517,6 +517,7 @@ export default class MinecraftV1Router implements Router {
 
           const renderedBlock = await this.legacyMinecraft3DRenderer.renderBlock(blockTexture);
           return reply
+            .header('Cache-Control', 'no-store')
             .header('Content-Type', 'image/png')
             .send(await renderedBlock.toPngBuffer({ width: size, height: size }));
         },
