@@ -40,7 +40,9 @@ export default class FastifyWebServer {
     this.fastify.addHook('onRequest', (_request: FastifyRequest, reply: FastifyReply, done: Fastify.HookHandlerDoneFunction): void => {
       reply
         .header('X-Powered-By', 'fastify')
-        .header('Content-Security-Policy', `default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none';`);
+        .header('Content-Security-Policy', `default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none';`)
+        .header('Access-Control-Allow-Origin', '*')
+        .header('Access-Control-Expose-Headers', 'Age');
       done();
     });
     this.fastify.addHook('onResponse', (request: FastifyRequest, reply: FastifyReply, done: Fastify.HookHandlerDoneFunction): void => {
