@@ -1,4 +1,4 @@
-import * as PrismaClient from '@prisma/client';
+import type * as PrismaClient from '../../../../../src/database/prisma-client/client.js';
 import { DeepMockProxy } from 'vitest-mock-extended';
 import { vitest } from 'vitest';
 import DatabaseClient from '../../../../../src/database/DatabaseClient.js';

@@ -1,7 +1,8 @@
-import * as PrismaClient from '@prisma/client';
+import type * as PrismaClient from '../../../database/prisma-client/client.js';
 import { singleton } from 'tsyringe';
 import MinecraftProfileCache from '../../../minecraft/profile/MinecraftProfileCache.js';
 import MinecraftProfileService from '../../../minecraft/profile/MinecraftProfileService.js';
+import ByteUtils from '../../../util/ByteUtils.js';
 import PayloadProcessor from './PayloadProcessor.js';
 
 @singleton()
@@ -13,7 +14,7 @@ export default class UsernameProcessor implements PayloadProcessor {
   }
 
   async process(task: PrismaClient.ImportTask): Promise<boolean> {
-    const username = task.payload.toString();
+    const username = ByteUtils.toBuffer(task.payload).toString('utf-8');
     if (!this.isValidUsername(username)) {
       throw new Error(`invalid username: ${JSON.stringify(username)}`);
     }

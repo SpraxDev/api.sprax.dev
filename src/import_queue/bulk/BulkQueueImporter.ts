@@ -1,4 +1,4 @@
-import * as PrismaClient from '@prisma/client';
+import type * as PrismaClient from '../../database/prisma-client/client.js';
 import Fs from 'node:fs';
 import Path from 'node:path';
 import { singleton } from 'tsyringe';

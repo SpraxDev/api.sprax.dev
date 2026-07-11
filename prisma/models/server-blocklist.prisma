@@ -18,7 +18,7 @@ model ServerBlocklistHostHashes {
 }
 
 view ServerBlocklist {
-  sha1 Bytes   @id
+  sha1 Bytes   @unique
   host String?
 
   @@map("server_blocklist")

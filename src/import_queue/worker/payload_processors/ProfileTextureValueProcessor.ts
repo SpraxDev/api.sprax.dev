@@ -1,4 +1,4 @@
-import * as PrismaClient from '@prisma/client';
+import type * as PrismaClient from '../../../database/prisma-client/client.js';
 import { singleton } from 'tsyringe';
 import AutoProxiedHttpClient from '../../../http/clients/AutoProxiedHttpClient.js';
 import SkinPersister from '../../../minecraft/persistance/base/SkinPersister.js';
@@ -9,6 +9,7 @@ import MinecraftSkinCache from '../../../minecraft/skin/MinecraftSkinCache.js';
 import { SkinRequestFailedException } from '../../../minecraft/skin/MinecraftSkinService.js';
 import MinecraftProfileTextures from '../../../minecraft/value-objects/MinecraftProfileTextures.js';
 import YggdrasilSignatureChecker from '../../../minecraft/yggdrasil/YggdrasilSignatureChecker.js';
+import ByteUtils from '../../../util/ByteUtils.js';
 import PayloadProcessor from './PayloadProcessor.js';
 
 @singleton()
@@ -69,7 +70,7 @@ export default class ProfileTextureValueProcessor implements PayloadProcessor {
   }
 
   private parsePayload(task: PrismaClient.ImportTask): { value: string, signature?: string } {
-    const parsedPayload = JSON.parse(task.payload.toString('utf-8'));
+    const parsedPayload = JSON.parse(ByteUtils.toBuffer(task.payload).toString('utf-8'));
     if (typeof parsedPayload.value !== 'string') {
       throw new Error('Invalid payload: Missing "value" property');
     }

@@ -16,7 +16,7 @@ model Profile {
 }
 
 view ProfileCache {
-  id            String @id @db.Uuid
+  id            String @unique @db.Uuid
   nameLowercase String @map("name_lowercase")
   raw           Json
   ageInSeconds  Int    @map("age_in_seconds")

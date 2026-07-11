@@ -1,9 +1,10 @@
-import * as PrismaClient from '@prisma/client';
+import type * as PrismaClient from '../../../database/prisma-client/client.js';
 import { singleton } from 'tsyringe';
 import { CAPE_TYPE_STRINGS, CapeType } from '../../../minecraft/cape/CapeType.js';
 import UserCapeService from '../../../minecraft/cape/UserCapeService.js';
 import MinecraftProfileService from '../../../minecraft/profile/MinecraftProfileService.js';
 import MinecraftProfile from '../../../minecraft/value-objects/MinecraftProfile.js';
+import ByteUtils from '../../../util/ByteUtils.js';
 import PayloadProcessor from './PayloadProcessor.js';
 
 @singleton()
@@ -15,7 +16,7 @@ export default class UpdateThirdPartyCapesProcessor implements PayloadProcessor 
   }
 
   async process(task: PrismaClient.ImportTask): Promise<boolean> {
-    const uuid = task.payload.toString();
+    const uuid = ByteUtils.toBuffer(task.payload).toString('utf-8');
     if (uuid.length !== 32) {
       throw new Error('Invalid UUID (hyphens are not allowed)');
     }

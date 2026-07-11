@@ -1,4 +1,4 @@
-import * as PrismaClient from '@prisma/client';
+import type * as PrismaClient from '../../../database/prisma-client/client.js';
 import MinecraftProfileTextures from '../../../minecraft/value-objects/MinecraftProfileTextures.js';
 import BulkImporter from './BulkImporter.js';
 import UuidBulkImporter from './UuidBulkImporter.js';

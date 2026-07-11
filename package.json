@@ -30,6 +30,8 @@
   "main": "dist/main.js",
   "type": "module",
   "scripts": {
+    "postinstall": "npm run prisma:generate || true",
+
     "build": "tsc",
     "build:docker": "docker build --file Containerfile --pull --rm --target prod --tag spraxdev/spraxapi:latest .",
     "build:podman": "podman build --file Containerfile --pull=newer --rm --target prod --tag spraxdev/spraxapi:latest .",
@@ -44,16 +46,16 @@
     "dev:queue-worker": "node --watch --env-file .env --import @swc-node/register/esm-register --enable-source-maps src/main.ts queue-worker",
     "dev:cli": "node --env-file .env --import @swc-node/register/esm-register --enable-source-maps src/main.ts cli",
 
-    "prisma:generate": "prisma generate --no-engine",
-    "prisma:migrate:dev": "prisma migrate dev",
-    "prisma:migrate:deploy": "prisma migrate deploy"
+    "prisma:generate": "prisma generate --require-models",
+    "prisma:migrate:dev": "prisma migrate dev && npm run prisma:generate"
   },
   "engines": {
     "node": ">=22.0.0",
     "npm": ">=10.0.0"
   },
   "dependencies": {
-    "@prisma/client": "^5.22.0",
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
     "@questdb/nodejs-client": "^4.2.0",
     "@sentry/node": "^10.65.0",
     "@spraxdev/node-commons": "github:SpraxDev/Node-Commons#5bf26778e78a8dcc14129a8042dbc7d2b9d288a3",
@@ -61,6 +63,7 @@
     "gl": "^8.1.6",
     "ipaddr.js": "^2.4.0",
     "mri": "^1.2.0",
+    "prisma": "^7.8.0",
     "reflect-metadata": "^0.2.2",
     "sharp": "^0.35.3",
     "socks": "^2.8.9",
@@ -75,7 +78,6 @@
     "@types/node": "^22.20.1",
     "@types/webgl-ext": "^0.0.37",
     "@vitest/coverage-v8": "^4.1.10",
-    "prisma": "^5.22.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.10",
     "vitest-mock-extended": "^4.0.0"

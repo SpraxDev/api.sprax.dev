@@ -1,6 +1,7 @@
-import { Prisma } from '@prisma/client';
+import type { Prisma } from '../../../database/prisma-client/client.js';
 import { singleton } from 'tsyringe';
 import DatabaseClient from '../../../database/DatabaseClient.js';
+import ByteUtils from '../../../util/ByteUtils.js';
 
 @singleton()
 export default class ServerBlocklistPersister {
@@ -28,7 +29,7 @@ export default class ServerBlocklistPersister {
     await (transaction ?? this.databaseClient).$executeRaw`REFRESH MATERIALIZED VIEW server_blocklist;`;
   }
 
-  private async updateHashesThatAreNoLongerBlocked(transaction: Prisma.TransactionClient, blocklist: Buffer[]): Promise<boolean> {
+  private async updateHashesThatAreNoLongerBlocked(transaction: Prisma.TransactionClient, blocklist: Buffer<ArrayBuffer>[]): Promise<boolean> {
     const hashesNoLongerBlocked = await transaction.serverBlocklist.findMany({
       where: {
         sha1: {
@@ -50,14 +51,14 @@ export default class ServerBlocklistPersister {
     return true;
   }
 
-  private async updateHashesThatAreNowBlocked(transaction: Prisma.TransactionClient, blocklist: Buffer[]): Promise<boolean> {
+  private async updateHashesThatAreNowBlocked(transaction: Prisma.TransactionClient, blocklist: Buffer<ArrayBuffer>[]): Promise<boolean> {
     const knownBlockedHashesResult = await transaction.serverBlocklist.findMany({
       where: {
         sha1: { in: blocklist },
       },
       select: { sha1: true },
     });
-    const knownBlockedHashes = new Set(knownBlockedHashesResult.map(hash => hash.sha1.toString('hex')));
+    const knownBlockedHashes = new Set(knownBlockedHashesResult.map(hash => ByteUtils.toBuffer(hash.sha1).toString('hex')));
 
     let wroteAnyChanges = false;
     for (const hashToBlock of blocklist) {

@@ -3,6 +3,7 @@ import Net from 'node:net';
 import Url from 'node:url';
 import { singleton } from 'tsyringe';
 import DatabaseClient from '../../../database/DatabaseClient.js';
+import ByteUtils from '../../../util/ByteUtils.js';
 import FqdnValidator from './FqdnValidator.js';
 import ServerBlocklistPersister from './ServerBlocklistPersister.js';
 
@@ -23,11 +24,12 @@ export default class ServerBlocklistService {
 
   async provideBlocklist(): Promise<string[]> {
     return (await this.databaseClient.serverBlocklist.findMany({ select: { sha1: true } }))
-      .map(blocklistEntry => blocklistEntry.sha1.toString('hex'));
+      .map(blocklistEntry => ByteUtils.toBuffer(blocklistEntry.sha1).toString('hex'));
   }
 
   async provideBlocklistForKnownHosts(): Promise<{ sha1: Buffer, host: string | null }[]> {
-    return this.databaseClient.serverBlocklist.findMany({ where: { host: { not: null } } });
+    return (await this.databaseClient.serverBlocklist.findMany({ where: { host: { not: null } } }))
+      .map(blocklistEntry => ({ ...blocklistEntry, sha1: ByteUtils.toBuffer(blocklistEntry.sha1) }));
   }
 
   async checkBlocklist(host: string, dateSeenAt?: Date): Promise<Map<string, boolean>> {

@@ -1,5 +1,5 @@
-import * as PrismaClient from '@prisma/client';
-import { CapeType } from '@prisma/client';
+import type * as PrismaClient from '../../../../../src/database/prisma-client/client.js';
+import { CapeType } from '../../../../../src/database/prisma-client/client.js';
 import { HttpResponse } from '@spraxdev/node-commons/http';
 import { DeepMockProxy, mockDeep } from 'vitest-mock-extended';
 import AutoProxiedHttpClient from '../../../../../src/http/clients/AutoProxiedHttpClient.js';

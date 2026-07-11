@@ -1,5 +1,6 @@
-import * as PrismaClient from '@prisma/client';
+import type * as PrismaClient from '../../../database/prisma-client/client.js';
 import type AutoProxiedHttpClient from '../../../http/clients/AutoProxiedHttpClient.js';
+import ByteUtils from '../../../util/ByteUtils.js';
 import type BulkImporter from './BulkImporter.js';
 
 export default class SkinUrlBulkImporter implements BulkImporter {
@@ -35,7 +36,7 @@ export default class SkinUrlBulkImporter implements BulkImporter {
     }
 
     return [{
-      payload: skinImage.body,
+      payload: ByteUtils.toBuffer(skinImage.body),
       payloadType: 'SKIN_IMAGE',
       importGroupId,
     }];

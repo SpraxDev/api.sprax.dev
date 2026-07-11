@@ -118,7 +118,7 @@ export default class MinecraftServerStatusService {
     });
   }
 
-  private async parseFavicon(favicon: string): Promise<{ pixelDataSha256: Buffer, data: Buffer } | null> {
+  private async parseFavicon(favicon: string): Promise<{ pixelDataSha256: Buffer<ArrayBuffer>, data: Buffer<ArrayBuffer> } | null> {
     const prefix = 'data:image/png;base64,';
     if (!favicon.startsWith(prefix)) {
       SentrySdk.logAndCaptureWarning(`Tried persisting a favicon that does not start with the expected prefix: ${prefix}`, { favicon });

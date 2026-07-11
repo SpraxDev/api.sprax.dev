@@ -1,6 +1,7 @@
 import { injectable } from 'tsyringe';
 import { ContainerTokens } from '../../../constants.js';
 import AutoProxiedHttpClient from '../../../http/clients/AutoProxiedHttpClient.js';
+import ByteUtils from '../../../util/ByteUtils.js';
 import MinecraftProfile from '../../value-objects/MinecraftProfile.js';
 import CapeCache from '../CapeCache.js';
 import { CapeType } from '../CapeType.js';
@@ -27,7 +28,7 @@ export default class MojangCapeProvider implements CapeProvider {
     const cachedCape = await this.capeCache.findByTypeAndUrl(CapeType.MOJANG, capeUrl);
     if (cachedCape != null) {
       return {
-        image: cachedCape.imageBytes,
+        image: ByteUtils.toBuffer(cachedCape.imageBytes),
         mimeType: cachedCape.mimeType,
         ageInSeconds: 0,
       };

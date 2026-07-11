@@ -57,7 +57,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
 USER node
 
 COPY --chown=node:node LICENSE README.md ./
-COPY --chown=node:node package.json package-lock.json tsconfig.json ./
+COPY --chown=node:node package.json package-lock.json tsconfig.json prisma.config.ts ./
 
 RUN npm clean-install
 COPY --chown=node:node prisma/ prisma/
@@ -74,7 +74,7 @@ ENV NODE_ENV=production
 USER node
 
 COPY --chown=node:node LICENSE README.md ./
-COPY --chown=node:node package.json package-lock.json tsconfig.json ./
+COPY --chown=node:node package.json package-lock.json tsconfig.json prisma.config.ts ./
 COPY --chown=node:node prisma/ prisma/
 COPY --chown=node:node --from=builder /app/node_modules/ node_modules/
 COPY --chown=node:node resources/ resources/

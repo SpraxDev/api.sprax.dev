@@ -54,6 +54,7 @@ jobs:
             -Dsonar.typescript.tsconfigPaths=tsconfig.json
             -Dsonar.javascript.lcov.reportPaths=./coverage/lcov.info
             -Dsonar.sources=src/
+            -Dsonar.exclusions=src/database/prisma-client/**
             -Dsonar.tests=tests/
             -Dsonar.test.inclusions=tests/**/*.test.ts
         env:

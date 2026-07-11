@@ -1,5 +1,6 @@
 import { singleton } from 'tsyringe';
 import DatabaseClient from '../../database/DatabaseClient.js';
+import ByteUtils from '../../util/ByteUtils.js';
 import ImageManipulator from '../image/ImageManipulator.js';
 import SkinImageManipulator from './manipulator/SkinImageManipulator.js';
 
@@ -42,10 +43,10 @@ export default class MinecraftSkinCache {
       return null;
     }
 
-    const skinImage = await SkinImageManipulator.createByImage(skinInDatabase.skin.imageBytes);
+    const skinImage = await SkinImageManipulator.createByImage(ByteUtils.toBuffer(skinInDatabase.skin.imageBytes));
     let normalizedSkin = skinImage;
     if (skinInDatabase.skin.normalizedSkin != null) {
-      normalizedSkin = await SkinImageManipulator.createByImage(skinInDatabase.skin.normalizedSkin.imageBytes);
+      normalizedSkin = await SkinImageManipulator.createByImage(ByteUtils.toBuffer(skinInDatabase.skin.normalizedSkin.imageBytes));
     }
 
     return {
@@ -72,7 +73,7 @@ export default class MinecraftSkinCache {
     return existingSkinImage != null;
   }
 
-  private async computePixelDataHash(buffer: Buffer): Promise<Buffer> {
+  private async computePixelDataHash(buffer: Buffer): Promise<Buffer<ArrayBuffer>> {
     return (await ImageManipulator.createByImage(buffer)).calculatePixelDataHashXXH128();
   }
 }

@@ -2,6 +2,7 @@
 !package.json
 !package-lock.json
 !tsconfig.json
+!prisma.config.ts
 !LICENSE
 !README.md
 

@@ -1,7 +1,8 @@
-import * as PrismaClient from '@prisma/client';
+import type * as PrismaClient from '../../../database/prisma-client/client.js';
 import { singleton } from 'tsyringe';
 import MinecraftProfileCache from '../../../minecraft/profile/MinecraftProfileCache.js';
 import MinecraftProfileService from '../../../minecraft/profile/MinecraftProfileService.js';
+import ByteUtils from '../../../util/ByteUtils.js';
 import PayloadProcessor from './PayloadProcessor.js';
 
 @singleton()
@@ -13,7 +14,7 @@ export default class UuidProcessor implements PayloadProcessor {
   }
 
   async process(task: PrismaClient.ImportTask | string): Promise<boolean> {
-    const uuid = typeof task === 'string' ? task : task.payload.toString();
+    const uuid = typeof task === 'string' ? task : ByteUtils.toBuffer(task.payload).toString('utf-8');
     if (uuid.length !== 32) {
       throw new Error('Invalid UUID (hyphens are not allowed)');
     }

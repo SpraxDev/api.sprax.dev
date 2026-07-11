@@ -1,6 +1,7 @@
-import * as PrismaClient from '@prisma/client';
+import type * as PrismaClient from '../../../database/prisma-client/client.js';
 import { singleton } from 'tsyringe';
 import DatabaseClient from '../../../database/DatabaseClient.js';
+import ByteUtils from '../../../util/ByteUtils.js';
 import ImageManipulator from '../../image/ImageManipulator.js';
 import MinecraftProfileTextures from '../../value-objects/MinecraftProfileTextures.js';
 
@@ -53,7 +54,7 @@ export default class CapePersister {
         data: {
           type: 'MOJANG',
           pixelDataHash: capePixelDataHash,
-          imageBytes: capeImage,
+          imageBytes: ByteUtils.toBuffer(capeImage),
           mimeType: 'image/png',
 
           capeUrls: { create: { url: capeUrl } },
@@ -89,7 +90,7 @@ export default class CapePersister {
         data: {
           type,
           pixelDataHash: capePixelDataHash,
-          imageBytes: capeImage,
+          imageBytes: ByteUtils.toBuffer(capeImage),
           mimeType,
         },
         select: { id: true },
@@ -98,7 +99,7 @@ export default class CapePersister {
     });
   }
 
-  private async computePixelDataHash(buffer: Buffer): Promise<Buffer> {
+  private async computePixelDataHash(buffer: Buffer): Promise<Buffer<ArrayBuffer>> {
     return (await ImageManipulator.createByImage(buffer)).calculatePixelDataHashXXH128();
   }
 }

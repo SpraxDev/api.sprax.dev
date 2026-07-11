@@ -1,6 +1,7 @@
 import Crypto from 'node:crypto';
 import { singleton } from 'tsyringe';
 import DatabaseClient from '../../../database/DatabaseClient.js';
+import ByteUtils from '../../../util/ByteUtils.js';
 import ImageManipulator from '../../image/ImageManipulator.js';
 import MinecraftProfileTextures from '../../value-objects/MinecraftProfileTextures.js';
 
@@ -85,13 +86,13 @@ export default class SkinPersister {
       const persistedSkin = await transaction.skin.create({
         data: {
           pixelDataHash: originalPixelDataHash,
-          imageBytes: originalSkinPng,
+          imageBytes: ByteUtils.toBuffer(originalSkinPng),
           normalizedSkin: !originalPixelDataHash.equals(normalizedPixelDataHash) ? {
             connectOrCreate: {
               where: { pixelDataHash: normalizedPixelDataHash },
               create: {
                 pixelDataHash: normalizedPixelDataHash,
-                imageBytes: normalizedSkinPng,
+                imageBytes: ByteUtils.toBuffer(normalizedSkinPng),
               },
             },
           } : undefined,
@@ -111,7 +112,7 @@ export default class SkinPersister {
     });
   }
 
-  private async computePixelDataHash(buffer: Buffer): Promise<Buffer> {
+  private async computePixelDataHash(buffer: Buffer): Promise<Buffer<ArrayBuffer>> {
     return (await ImageManipulator.createByImage(buffer)).calculatePixelDataHashXXH128();
   }
 }

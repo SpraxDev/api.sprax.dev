@@ -1,4 +1,4 @@
-import * as PrismaClient from '@prisma/client';
+import type * as PrismaClient from '../../database/prisma-client/client.js';
 import { singleton } from 'tsyringe';
 import AppConfiguration from '../../config/AppConfiguration.js';
 import DatabaseClient from '../../database/DatabaseClient.js';

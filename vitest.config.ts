@@ -47,6 +47,7 @@ export default defineConfig({
         './src/main.ts',
 
         './src/database/DatabaseClient.ts',
+        './src/database/prisma-client/**',
         './src/webserver/routes/minecraft/MinecraftV2Router.ts',
       ],
     },

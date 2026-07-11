@@ -1,6 +1,6 @@
-import * as PrismaClient from '@prisma/client';
 import { singleton } from 'tsyringe';
 import DatabaseClient from '../../database/DatabaseClient.js';
+import { CapeType } from '../../database/prisma-client/client.js';
 import AutoProxiedHttpClient from '../../http/clients/AutoProxiedHttpClient.js';
 import CapeCache from '../cape/CapeCache.js';
 import MinecraftProfileCache from '../profile/MinecraftProfileCache.js';
@@ -68,7 +68,7 @@ export default class ByTexturesPropertyPersister {
     const capeUrl = parsedTextures.getSecureCapeUrl();
     if (capeUrl != null) {
       promises.push((async () => {
-        let capeId = await this.capeCape.findIdByTypeAndUrl(PrismaClient.CapeType.MOJANG, capeUrl);
+        let capeId = await this.capeCape.findIdByTypeAndUrl(CapeType.MOJANG, capeUrl);
         if (capeId == null) {
           const capeImage = await this.downloadImage(capeUrl);
           capeId = await this.capePersister.persistMojangCape(texturesProperty.value, capeImage);

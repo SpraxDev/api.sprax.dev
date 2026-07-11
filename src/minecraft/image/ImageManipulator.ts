@@ -1,5 +1,6 @@
 import Sharp, { type OutputInfo as SharpOutputInfo, type Sharp as SharpInstance } from 'sharp';
 import XXHashAddon from 'xxhash-addon';
+import ByteUtils from '../../util/ByteUtils.js';
 
 export interface Color {
   readonly r: number;
@@ -148,8 +149,8 @@ export default class ImageManipulator {
     });
   }
 
-  calculatePixelDataHashXXH128(): Buffer {
-    return XXHashAddon.XXHash128.hash(this.pixelData);
+  calculatePixelDataHashXXH128(): Buffer<ArrayBuffer> {
+    return ByteUtils.toBuffer(XXHashAddon.XXHash128.hash(this.pixelData));
   }
 
   static async createEmpty(width: number, height: number): Promise<ImageManipulator> {

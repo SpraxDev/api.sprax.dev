@@ -1,9 +1,10 @@
-import * as PrismaClient from '@prisma/client';
 import { singleton } from 'tsyringe';
+import type * as PrismaClient from '../../../database/prisma-client/client.js';
 import SkinPersister from '../../../minecraft/persistance/base/SkinPersister.js';
 import MinecraftSkinNormalizer from '../../../minecraft/skin/manipulator/MinecraftSkinNormalizer.js';
 import SkinImageManipulator from '../../../minecraft/skin/manipulator/SkinImageManipulator.js';
 import MinecraftSkinCache from '../../../minecraft/skin/MinecraftSkinCache.js';
+import ByteUtils from '../../../util/ByteUtils.js';
 import PayloadProcessor from './PayloadProcessor.js';
 
 @singleton()
@@ -16,14 +17,16 @@ export default class SkinImageProcessor implements PayloadProcessor {
   }
 
   async process(task: PrismaClient.ImportTask): Promise<boolean> {
-    if (await this.minecraftSkinCache.existsByImageBytes(task.payload)) {
+    const skinImage = ByteUtils.toBuffer(task.payload);
+
+    if (await this.minecraftSkinCache.existsByImageBytes(skinImage)) {
       return false;
     }
 
-    const originalSkin = await SkinImageManipulator.createByImage(task.payload);
+    const originalSkin = await SkinImageManipulator.createByImage(skinImage);
     const normalizedSkin = await this.minecraftSkinNormalizer.normalizeSkin(originalSkin);
 
-    await this.skinPersister.persist(task.payload, await normalizedSkin.toPngBuffer(), null);
+    await this.skinPersister.persist(skinImage, await normalizedSkin.toPngBuffer(), null);
     return true;
   }
 }

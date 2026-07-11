@@ -1,4 +1,4 @@
-import * as PrismaClient from '@prisma/client';
+import type * as PrismaClient from '../../../database/prisma-client/client.js';
 import BulkImporter from './BulkImporter.js';
 
 export default class UsernameBulkImporter implements BulkImporter {

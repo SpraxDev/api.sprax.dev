@@ -1,4 +1,4 @@
-import * as PrismaClient from '@prisma/client';
+import type * as PrismaClient from '../../../database/prisma-client/client.js';
 import type ServerBlocklistService from '../../../minecraft/server/blocklist/ServerBlocklistService.js';
 import type BulkImporter from './BulkImporter.js';
 

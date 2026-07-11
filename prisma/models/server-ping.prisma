@@ -28,7 +28,7 @@ model ServerStatusFavicon {
 }
 
 view ServerStatusCache {
-  id                BigInt  @id
+  id                BigInt  @unique
   host              String
   port              Int
   rttInMs           Int     @map("rtt_in_ms")

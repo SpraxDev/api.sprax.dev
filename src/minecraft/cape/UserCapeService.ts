@@ -1,4 +1,5 @@
 import { singleton } from 'tsyringe';
+import ByteUtils from '../../util/ByteUtils.js';
 import SentrySdk from '../../util/SentrySdk.js';
 import CapePersister from '../persistance/base/CapePersister.js';
 import ProfileSeenCapePersister from '../persistance/base/ProfileSeenCapePersister.js';
@@ -40,7 +41,7 @@ export default class UserCapeService {
     const cacheAgeInSeconds = cachedCape == null ? 0 : (Date.now() - cachedCape.lastSeenUsing.getTime()) / 1000;
     if (cachedCape != null && cacheAgeInSeconds <= 60) {
       return {
-        image: cachedCape.cape.imageBytes,
+        image: ByteUtils.toBuffer(cachedCape.cape.imageBytes),
         mimeType: cachedCape.cape.mimeType,
         ageInSeconds: cacheAgeInSeconds,
       };
@@ -53,7 +54,7 @@ export default class UserCapeService {
       if (cachedCape != null && cacheAgeInSeconds <= 10 * 60) {
         SentrySdk.captureError(err);
         return {
-          image: cachedCape.cape.imageBytes,
+          image: ByteUtils.toBuffer(cachedCape.cape.imageBytes),
           mimeType: cachedCape.cape.mimeType,
           ageInSeconds: cacheAgeInSeconds,
         };

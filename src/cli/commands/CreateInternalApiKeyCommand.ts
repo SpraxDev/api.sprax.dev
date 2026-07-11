@@ -2,6 +2,7 @@ import { injectable } from 'tsyringe';
 import { ContainerTokens } from '../../constants.js';
 import DatabaseClient from '../../database/DatabaseClient.js';
 import MinecraftProfileService from '../../minecraft/profile/MinecraftProfileService.js';
+import ByteUtils from '../../util/ByteUtils.js';
 import CliCommand from './CliCommand.js';
 
 @injectable({ token: ContainerTokens.CLI_COMMAND })
@@ -41,7 +42,7 @@ export default class CreateInternalApiKeyCommand implements CliCommand {
       },
     });
     console.log(`Created new API key (id=${apiKey.id}) with name ${JSON.stringify(apiKey.name)}:`);
-    console.log(`spraxapi.${apiKey.key.toString('hex')}`);
+    console.log(`spraxapi.${ByteUtils.toBuffer(apiKey.key).toString('hex')}`);
 
     return true;
   }
