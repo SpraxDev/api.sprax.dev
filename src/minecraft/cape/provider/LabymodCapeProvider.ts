@@ -19,7 +19,17 @@ export default class LabymodCapeProvider implements CapeProvider {
   async provide(profile: MinecraftProfile): Promise<CapeResponse | null> {
     const capeUrl = `https://dl.labymod.net/capes/${this.addHyphensToId(profile.id)}`;
 
-    const capeResponse = await this.httpClient.get(capeUrl);
+    let capeResponse = await this.httpClient.get(capeUrl);
+    // TODO: Can we have the HTTPClient auto-follow redirects?
+    if (capeResponse.statusCode === 301) {
+      const redirectTargetUrl = capeResponse.getHeader('location') ?? '';
+      if (!redirectTargetUrl.startsWith('https://')) {
+        throw new Error(`Failed to fetch cape from ${capeUrl} (status code ${capeResponse.statusCode} and location header ${JSON.stringify(redirectTargetUrl)})`);
+      }
+
+      capeResponse = await this.httpClient.get(redirectTargetUrl);
+    }
+
     if (capeResponse.statusCode === 404) {
       return null;
     }
