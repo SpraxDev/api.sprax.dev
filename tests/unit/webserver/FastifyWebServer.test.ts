@@ -37,7 +37,9 @@ describe('FastifyWebServer', () => {
     expect(response.json()).toEqual({ error: 'Requested resource not found' });
   });
 
-  test('A request throwing an uncaught error should return 500', async () => {
+  test('A request throwing an uncaught error should return 500 and log the error', async () => {
+    const consoleErrorSpy = vitest.spyOn(console, 'error').mockImplementation(() => {});
+
     const response = await fastify.inject({
       method: 'GET',
       url: '/uncaught-error',
@@ -45,6 +47,11 @@ describe('FastifyWebServer', () => {
 
     expect(response.statusCode).toBe(500);
     expect(response.json()).toEqual({ error: 'Internal Server Error' });
+
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+    expect(consoleErrorSpy).toHaveBeenCalledWith(new Error('Uncaught Error'));
+
+    consoleErrorSpy.mockRestore();
   });
 
   test('#listen should call the Fastify server', async () => {
