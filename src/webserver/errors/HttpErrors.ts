@@ -6,7 +6,7 @@ export abstract class HttpError extends Error {
     super(`[${httpStatusCode}] ${httpErrorMessage}`);
   }
 
-  createResponseBody(): Record<string, any> {
+  createResponseBody(): { error: string } {
     return { error: this.httpErrorMessage };
   }
 }

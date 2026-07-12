@@ -18,6 +18,7 @@ export default class PingRouter implements Router {
   }
 
   register(server: FastifyInstanceWithZod): void {
+    // TODO: Add this endpoint to the OpenAPI spec file
     server.get('/mc/v2/server/ping', {
       schema: {
         querystring: z.object({
@@ -35,6 +36,8 @@ export default class PingRouter implements Router {
             .optional()
             .default(PingRouter.MINECRAFT_DEFAULT_PORT),
         }),
+
+        // TODO: add response schema (account for additional data fields in ping)
       },
     }, async (request, reply): Promise<RouteReturn> => {
       const serverStatus = await this.minecraftServerStatusService.provideServerStatus(request.query.host, request.query.port);

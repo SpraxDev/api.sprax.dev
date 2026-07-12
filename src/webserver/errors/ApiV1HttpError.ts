@@ -8,7 +8,7 @@ export class ApiV1BadRequestError extends BadRequestError {
     super(httpErrorMessage);
   }
 
-  createResponseBody(): Record<string, any> {
+  createResponseBody(): { error: string, message: string; details: unknown } {
     return {
       error: 'Bad Request',
       message: this.httpErrorMessage,
@@ -34,7 +34,7 @@ export class ApiV1NotFoundError extends NotFoundError {
     super(httpErrorMessage);
   }
 
-  createResponseBody(): Record<string, any> {
+  createResponseBody(): { error: string, message: string } {
     return {
       error: 'Not Found',
       message: this.httpErrorMessage,

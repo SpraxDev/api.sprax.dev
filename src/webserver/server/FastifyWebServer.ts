@@ -1,7 +1,8 @@
+import FastifySwaggerPlugin from '@fastify/swagger';
 import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
 import * as FastifyTypeProviderZod from 'fastify-type-provider-zod';
 import { injectAll, singleton } from 'tsyringe';
-import { ContainerTokens } from '../../constants.js';
+import { ContainerTokens, getAppInfo } from '../../constants.js';
 import Metrics from '../../metrics/Metrics.js';
 import { HttpError } from '../errors/HttpErrors.js';
 import type Router from '../routes/Router.js';
@@ -40,6 +41,59 @@ export default class FastifyWebServer {
 
     this.fastify.setValidatorCompiler(FastifyTypeProviderZod.validatorCompiler);
     this.fastify.setSerializerCompiler(FastifyTypeProviderZod.serializerCompiler);
+
+    // TODO: Can we delcare our own plugin or something that registers this one or something?
+    //       At least move the registration and config in a private method
+    // TODO: Maybe make the OpenAPI-Spec opt-in, so other installations (that do not exist)
+    //       do not automatically expose information that is incorrect for that installation (servers, contact, etc.)
+    this.fastify.register(FastifySwaggerPlugin, {
+      transform: (ctx) => {
+        const transformed = FastifyTypeProviderZod.jsonSchemaTransform(ctx);
+        transformed.schema = { ...transformed.schema, hide: ctx.schema?.hide ?? true };
+
+        // remove optional parameter '?' indicator that otherwise produces invalid path specs
+        transformed.url = transformed.url.replace(/\?$/, '');
+        return transformed;
+      },
+
+      openapi: {
+        openapi: '3.1.0',
+
+        info: {
+          title: `Sprax's public Minecraft APIs`,
+          version: getAppInfo().version,
+          description: '!!! **Set a proper User-Agent header, when using this API** !!!\n\n' +
+            '**API stability**: Endpoints documented here can generally be considered stable and "public".\n' +
+            'But error response bodies are not stable right now and may change from time-to-time (But documented status codes are stable).\n\n' +
+            '**Rate-Limiting:** There are plans to rate limit generic User-Agents, to encourage active users to set a custom one. ' +
+            'Please include *some* version in your User-Agent, as I may block abusive looking ones and hope for an update that improves on that. ' +
+            'You may optionally provide a URL or way of contact in the User-Agent and I will try to reach out beforehand in that case ^^\n\n' +
+            '**You are using my API in your project?** Let me know <3',
+          license: {
+            name: 'GNU General Public License v3.0 or later',
+            identifier: 'GPL-3.0-or-later',
+          },
+          contact: {
+            name: 'Christian Koop',
+            url: 'https://github.com/SpraxDev',
+          },
+        },
+
+        servers: [
+          { url: 'https://api.sprax.dev/' },
+          {
+            url: 'https://api.sprax2013.de/',
+            description: 'DEPRECATED (Backwards compatibility mode; remove /mc/v1/ from paths)',
+          },
+        ],
+
+        tags: [
+          { name: 'Minecraft (v2)', description: 'Work In Progress – Definition subject to change' },
+          { name: 'Minecraft (v1)', description: 'Will be replaced by the v2 endpoints' },
+          { name: 'Miscellaneous', description: 'Other endpoints' },
+        ],
+      },
+    });
 
     this.registerDefaultHeaders();
     this.registerMetricsCollection();
