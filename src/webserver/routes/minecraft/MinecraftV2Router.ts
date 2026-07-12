@@ -1,15 +1,9 @@
 import type { FastifyRequest } from 'fastify';
-import Net from 'node:net';
 import { injectable } from 'tsyringe';
 import { ContainerTokens } from '../../../constants.js';
 import ResolvedToNonUnicastIpError from '../../../http/dns/errors/ResolvedToNonUnicastIpError.js';
 import type ImageManipulator from '../../../minecraft/image/ImageManipulator.js';
-import type { UsernameToUuidResponse } from '../../../minecraft/MinecraftApiClient.js';
-import MinecraftProfileService, { type Profile } from '../../../minecraft/profile/MinecraftProfileService.js';
-import ServerBlocklistService, {
-  InvalidHostError,
-} from '../../../minecraft/server/blocklist/ServerBlocklistService.js';
-import MinecraftServerStatusService from '../../../minecraft/server/ping/MinecraftServerStatusService.js';
+import { type Profile } from '../../../minecraft/profile/MinecraftProfileService.js';
 import MinecraftSkinCache from '../../../minecraft/skin/MinecraftSkinCache.js';
 import MinecraftSkinService, {
   Skin,
@@ -19,7 +13,7 @@ import MinecraftSkinTypeDetector from '../../../minecraft/skin/MinecraftSkinType
 import SkinImage2DRenderer from '../../../minecraft/skin/renderer/SkinImage2DRenderer.js';
 import MinecraftProfile from '../../../minecraft/value-objects/MinecraftProfile.js';
 import MinecraftProfileTextures from '../../../minecraft/value-objects/MinecraftProfileTextures.js';
-import UUID from '../../../util/UUID.js';
+import MinecraftProfileByNameOrIdProvider from '../../../util/http/MinecraftProfileByNameOrIdProvider.js';
 import { BadRequestError, NotFoundError } from '../../errors/HttpErrors.js';
 import type { FastifyInstanceWithZod } from '../../server/FastifyWebServer.js';
 import type { default as Router, RouteReturn } from '../Router.js';
@@ -27,12 +21,10 @@ import type { default as Router, RouteReturn } from '../Router.js';
 @injectable({ token: ContainerTokens.ROUTER })
 export default class MinecraftV2Router implements Router {
   constructor(
-    private readonly minecraftProfileService: MinecraftProfileService,
+    private readonly minecraftProfileByNameOrIdProvider: MinecraftProfileByNameOrIdProvider,
     private readonly minecraftSkinService: MinecraftSkinService,
     private readonly minecraftSkinTypeDetector: MinecraftSkinTypeDetector,
     private readonly skinImage2DRenderer: SkinImage2DRenderer,
-    private readonly serverBlocklistService: ServerBlocklistService,
-    private readonly minecraftServerStatusService: MinecraftServerStatusService,
     private readonly minecraftSkinCache: MinecraftSkinCache,
   ) {
   }
@@ -42,39 +34,6 @@ export default class MinecraftV2Router implements Router {
   }
 
   register(server: FastifyInstanceWithZod): void {
-    server.get('/uuid/:username?', async (request, reply): Promise<RouteReturn> => {
-      const inputUsername = (request.params as any).username;
-      if (typeof inputUsername !== 'string' || inputUsername.length > 16 || inputUsername.length < 3) {
-        throw new BadRequestError('Invalid username');
-      }
-
-      const profile = await this.minecraftProfileService.provideProfileByUsername(inputUsername);
-      if (profile == null) {
-        reply.header('Cache-Control', 'max-age=60, s-maxage=60');
-        throw new NotFoundError('No UUID found for username');
-      }
-
-      return reply
-        .header('Age', Math.floor(profile.ageInSeconds).toString())
-        .header('Cache-Control', 'max-age=60, s-maxage=60, immutable')
-        .send({
-          id: profile.profile.id,
-          name: profile.profile.name,
-        } satisfies UsernameToUuidResponse);
-    });
-
-    server.get('/profile/:user?', async (request, reply): Promise<RouteReturn> => {
-      const profile = await this.resolveUserToProfile((request.params as any).user);
-      if (profile == null) {
-        reply.header('Cache-Control', 'max-age=60, s-maxage=60');
-        throw new NotFoundError(`Unable to find a profile for the given UUID or username`);
-      }
-      return reply
-        .header('Age', Math.floor(profile.ageInSeconds).toString())
-        .header('Cache-Control', 'max-age=60, s-maxage=60, immutable')
-        .send(profile.profile);
-    });
-
     server.get('/skin/x-url/:skinArea?', async (request, reply): Promise<RouteReturn> => {
       const skinUrl = (request.query as any).url;
       if (typeof skinUrl !== 'string' || skinUrl.length <= 0) {
@@ -153,108 +112,13 @@ export default class MinecraftV2Router implements Router {
         .header('Cache-Control', 'max-age=60, s-maxage=60, immutable')
         .send(skinResponse.pngBody);
     });
-
-    server.get('/server/blocklist', async (_request, reply): Promise<RouteReturn> => {
-      const blocklist = await this.serverBlocklistService.provideBlocklist();
-      return reply
-        .header('Cache-Control', 'max-age=120, s-maxage=120')
-        .send(blocklist);
-    });
-
-    server.get('/server/blocklist/check', async (request, reply): Promise<RouteReturn> => {
-      const inputHost = (request.query as any).host;
-      if (typeof inputHost !== 'string') {
-        throw new BadRequestError('Missing or invalid query parameter "host"');
-      }
-
-      let blocklist;
-      try {
-        blocklist = await this.serverBlocklistService.checkBlocklist(inputHost);
-      } catch (err: any) {
-        if (err instanceof InvalidHostError) {
-          throw new BadRequestError(err.message);
-        }
-        throw err;
-      }
-      const responseBody: { [key: string]: boolean } = {};
-      for (const [host, isBlocked] of blocklist) {
-        responseBody[host] = isBlocked;
-      }
-      return reply
-        .header('Cache-Control', 'max-age=120, s-maxage=120')
-        .send(responseBody);
-    });
-
-    server.get('/server/blocklist/discovered', async (_request, reply): Promise<RouteReturn> => {
-      const blocklist = await this.serverBlocklistService.provideBlocklistForKnownHosts();
-      const responseBody: { [key: string]: string } = {};
-      for (const listEntry of blocklist) {
-        if (listEntry.host != null) {
-          responseBody[listEntry.sha1.toString('hex')] = listEntry.host;
-        }
-      }
-
-      return reply
-        .header('Cache-Control', 'max-age=120, s-maxage=120')
-        .send(responseBody);
-    });
-
-    server.get('/server/ping', async (request, reply): Promise<RouteReturn> => {
-      const validateHost = (inputHost: string) => {
-        if (Net.isIP(inputHost) > 0) {
-          return;
-        }
-
-        if (inputHost.includes(':')) {
-          throw new BadRequestError('Invalid host – If you want to provide a port, use the "port" query parameter');
-        }
-      };
-
-      const inputHost = (request.query as any).host;
-      if (typeof inputHost !== 'string') {
-        throw new BadRequestError('Missing or invalid query parameter "host"');
-      }
-      const inputPort = (request.query as any).port;
-      if (inputPort != null && (typeof inputPort !== 'string' || /^\d+$/.exec(inputPort) == null)) {
-        throw new BadRequestError('Missing or invalid query parameter "port"');
-      }
-
-      const port = inputPort != null ? parseInt(inputPort, 10) : 25565;
-      validateHost(inputHost);
-
-      const serverStatus = await this.minecraftServerStatusService.provideServerStatus(inputHost, port);
-
-      reply
-        .header('Cache-Control', 'max-age=30, s-maxage=30')
-        .header('Age', serverStatus.ageInSeconds);
-
-      if (serverStatus.serverStatus != null) {
-        return reply
-          .send(serverStatus.serverStatus);
-      }
-
-      // FIXME: Unify success and "error" response content/layout
-      return reply
-        .status(200)
-        .send({ online: false });
-    });
   }
 
   private async resolveUserToProfile(inputUser: unknown): Promise<Profile | null> {
     if (typeof inputUser !== 'string') {
       throw new BadRequestError('Invalid username or UUID');
     }
-
-    const inputUserLooksLikeUsername = inputUser.length <= 16;
-    const inputUserLooksLikeUuid = UUID.looksLikeUuid(inputUser);
-    if (!inputUserLooksLikeUsername && !inputUserLooksLikeUuid) {
-      throw new BadRequestError('Invalid username or UUID');
-    }
-
-    if (inputUserLooksLikeUsername) {
-      return await this.minecraftProfileService.provideProfileByUsername(inputUser);
-    }
-    return await this.minecraftProfileService.provideProfileByUuid(inputUser);
+    return this.minecraftProfileByNameOrIdProvider.provide(inputUser);
   }
 
   private async processSkinRequest(request: FastifyRequest, skin: Skin, renderSlim: boolean): Promise<{ pngBody: Buffer, skinArea: 'head' | 'body' | null, forceDownload: boolean }> {

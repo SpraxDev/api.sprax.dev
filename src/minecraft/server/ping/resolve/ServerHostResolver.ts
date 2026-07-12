@@ -21,6 +21,8 @@ export default class ServerHostResolver {
   // FIXME: also catch 'SERVFAIL' errors and re-throw a nice Error that can be handled in the request-layer
   //       > occurs when a DNS resolver fails to obtain a valid response from the Authoritative DNS server for a particular domain
   //       At least provide a good error message to the user - Probably still a 5xx status code?
+  // FIXME: Right now, I cannot ping a server on a different port, if it has a SRV record. The SRV record should only
+  //        be checked/resolved when the user did not specify a port (maybe they explicitly specify 25565).
   private async performResolve(host: string, port: number): Promise<[string, number]> {
     if (Net.isIP(host) !== 0) {
       return [host, port];
