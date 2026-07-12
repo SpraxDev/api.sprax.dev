@@ -60,6 +60,7 @@
     "@sentry/node": "^10.65.0",
     "@spraxdev/node-commons": "github:SpraxDev/Node-Commons#5bf26778e78a8dcc14129a8042dbc7d2b9d288a3",
     "fastify": "^5.10.0",
+    "fastify-type-provider-zod": "^7.0.0",
     "gl": "^8.1.6",
     "ipaddr.js": "^2.4.0",
     "mri": "^1.2.0",
@@ -69,7 +70,8 @@
     "socks": "^2.8.9",
     "tsyringe": "^4.10.0",
     "undici": "^8.7.0",
-    "xxhash-addon": "^2.1.0"
+    "xxhash-addon": "^2.1.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@swc-node/register": "^1.11.1",

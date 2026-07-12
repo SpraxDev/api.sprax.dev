@@ -1,5 +1,10 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyReply } from 'fastify';
+import type { FastifyInstanceWithZod } from '../server/FastifyWebServer.js';
+
+export type RouteReturn = FastifyReply | Promise<FastifyReply>;
 
 export default interface Router {
-  register(server: FastifyInstance): void;
+  getRoutePrefix?(): string;
+
+  register(server: FastifyInstanceWithZod, options?: unknown): void;
 }

@@ -1,7 +1,7 @@
 import '../../../../src/container-init.js';
 import { FastifyInstance } from 'fastify';
 import { container } from 'tsyringe';
-import FastifyWebServer from '../../../../src/webserver/FastifyWebServer.js';
+import FastifyWebServer from '../../../../src/webserver/server/FastifyWebServer.js';
 import { EXISTING_MC_ID, EXISTING_MC_NAME } from '../../../test-constants.js';
 
 describe('/mc/v1/history/*', () => {
@@ -38,6 +38,6 @@ describe('/mc/v1/history/*', () => {
 
     expect(response.statusCode).toBe(405);
     expect(response.body).toBe('Method Not Allowed');
-    expect(response.headers['allow']).toBe('GET, HEAD');
+    expect(response.headers['allow']).toBe('HEAD, GET');
   });
 });

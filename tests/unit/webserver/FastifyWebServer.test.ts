@@ -1,24 +1,24 @@
-import { FastifyInstance, type FastifyReply } from 'fastify';
+import { FastifyInstance } from 'fastify';
 import { vitest } from 'vitest';
 import Metrics from '../../../src/metrics/Metrics.js';
-import FastifyWebServer from '../../../src/webserver/FastifyWebServer.js';
-import Router from '../../../src/webserver/routes/Router.js';
+import type { default as Router, RouteReturn } from '../../../src/webserver/routes/Router.js';
+import FastifyWebServer from '../../../src/webserver/server/FastifyWebServer.js';
 
 class TestRouter implements Router {
   register(server: FastifyInstance): void {
-    server.get('/hello', (request, reply): FastifyReply => {
+    server.get('/hello', (_request, reply): RouteReturn => {
       return reply.send('Hello World');
     });
 
-    server.get('/uncaught-error', (): FastifyReply => {
+    server.get('/uncaught-error', (): RouteReturn => {
       throw new Error('Uncaught Error');
     });
 
-    server.all('/restful', (request, reply): Promise<FastifyReply> => {
-      return FastifyWebServer.handleRestfully(request, reply, {
-        get: (): FastifyReply => reply.send('GET'),
-        post: (): FastifyReply => reply.send('POST'),
-      });
+    server.get('/restful', (_request, reply): RouteReturn => {
+      return reply.send('GET');
+    });
+    server.post('/restful', (_request, reply): RouteReturn => {
+      return reply.send('POST');
     });
   }
 }
@@ -85,7 +85,7 @@ describe('static #handleRestfully', () => {
 
     expect(response.statusCode).toBe(405);
     expect(response.body).toBe('Method Not Allowed');
-    expect(response.headers['allow']).toBe('GET, POST, HEAD');
+    expect(response.headers['allow']).toBe('HEAD, GET, POST');
   });
 
   test('Expect HEAD requests to properly return 200', async () => {

@@ -3,7 +3,7 @@ import { FastifyInstance } from 'fastify';
 import { DeepMockProxy } from 'vitest-mock-extended';
 import { container } from 'tsyringe';
 import DatabaseClient from '../../../../src/database/DatabaseClient.js';
-import FastifyWebServer from '../../../../src/webserver/FastifyWebServer.js';
+import FastifyWebServer from '../../../../src/webserver/server/FastifyWebServer.js';
 
 describe('/mc/v1/servers/blocked', () => {
   let databaseClient: DeepMockProxy<DatabaseClient>;
@@ -51,7 +51,7 @@ describe('/mc/v1/servers/blocked', () => {
 
     expect(response.statusCode).toBe(405);
     expect(response.body).toBe('Method Not Allowed');
-    expect(response.headers['allow']).toBe('GET, HEAD');
+    expect(response.headers['allow']).toBe('HEAD, GET');
   });
 });
 
@@ -100,7 +100,7 @@ describe('/mc/v1/servers/blocked/known', () => {
 
     expect(response.statusCode).toBe(405);
     expect(response.body).toBe('Method Not Allowed');
-    expect(response.headers['allow']).toBe('GET, HEAD');
+    expect(response.headers['allow']).toBe('HEAD, GET');
   });
 });
 
@@ -210,6 +210,6 @@ describe('/mc/v1/servers/blocked/check', () => {
 
     expect(response.statusCode).toBe(405);
     expect(response.body).toBe('Method Not Allowed');
-    expect(response.headers['allow']).toBe('GET, HEAD');
+    expect(response.headers['allow']).toBe('HEAD, GET');
   });
 });

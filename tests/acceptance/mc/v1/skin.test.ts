@@ -5,7 +5,7 @@ import Sharp from 'sharp';
 import { container } from 'tsyringe';
 import ResolvedToNonUnicastIpError from '../../../../src/http/dns/errors/ResolvedToNonUnicastIpError.js';
 import UnicastOnlyDnsResolver from '../../../../src/http/dns/resolver/UnicastOnlyDnsResolver.js';
-import FastifyWebServer from '../../../../src/webserver/FastifyWebServer.js';
+import FastifyWebServer from '../../../../src/webserver/server/FastifyWebServer.js';
 import { EXISTING_MC_ID, EXISTING_MC_ID_WITH_HYPHENS, EXISTING_MC_NAME } from '../../../test-constants.js';
 import { createStrictDeepMock } from '../../../test-helpers.js';
 
@@ -171,7 +171,7 @@ describe('/mc/v1/skin/:user', () => {
 
     expect(response.statusCode).toBe(405);
     expect(response.body).toBe('Method Not Allowed');
-    expect(response.headers['allow']).toBe('GET, HEAD');
+    expect(response.headers['allow']).toBe('HEAD, GET');
   });
 });
 
@@ -515,6 +515,6 @@ describe.each([
 
     expect(response.statusCode).toBe(405);
     expect(response.body).toBe('Method Not Allowed');
-    expect(response.headers['allow']).toBe('GET, HEAD');
+    expect(response.headers['allow']).toBe('HEAD, GET');
   });
 });

@@ -18,7 +18,7 @@ export class BadRequestError extends HttpError {
 }
 
 export class NotFoundError extends HttpError {
-  constructor(httpErrorMessage: string) {
+  constructor(httpErrorMessage = 'Requested resource not found') {
     super(404, httpErrorMessage);
   }
 }

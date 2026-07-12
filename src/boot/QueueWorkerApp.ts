@@ -3,7 +3,7 @@ import CliArgumentProvider from '../cli/CliArgumentProvider.js';
 import AppConfiguration from '../config/AppConfiguration.js';
 import ContinuousQueueWorker from '../import_queue/worker/ContinuousQueueWorker.js';
 import TaskScheduler from '../task_queue/TaskScheduler.js';
-import FastifyWebServer from '../webserver/FastifyWebServer.js';
+import FastifyWebServer from '../webserver/server/FastifyWebServer.js';
 import App from './App.js';
 
 export default class QueueWorkerApp implements App {

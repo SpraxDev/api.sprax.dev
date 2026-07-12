@@ -46,7 +46,7 @@ export default class ContinuousQueueWorker {
   async start(): Promise<void> {
     let delay = 2500;
     if (this.appConfiguration.config.workerTickIntervalDynamic) {
-      delay = 3000 / Math.max(this.proxyServerConfigurationProvider.getProxyServers().length, 1);
+      delay = 2000 / Math.max(this.proxyServerConfigurationProvider.getProxyServers().length, 1);
     }
     const averageTicksPerMinute = Math.round(60000 / delay);
     this.taskBufferSize = Math.max(50, Math.min(averageTicksPerMinute / 3, 50));

@@ -42,7 +42,7 @@ import ThirdPartyMinecraftApiClient from '../../src/minecraft/ThirdPartyMinecraf
 import ProxyServerConfigurationProvider from '../../src/net/proxy/ProxyServerConfigurationProvider.js';
 import SocksProxyServerConnector from '../../src/net/proxy/SocksProxyServerConnector.js';
 import ProxyPoolHttpClientHealthcheckTask from '../../src/task_queue/tasks/ProxyPoolHttpClientHealthcheckTask.js';
-import FastifyWebServer from '../../src/webserver/FastifyWebServer.js';
+import FastifyWebServer from '../../src/webserver/server/FastifyWebServer.js';
 import MetricsRouter from '../../src/webserver/routes/MetricsRouter.js';
 import MinecraftV1Router from '../../src/webserver/routes/minecraft/MinecraftV1Router.js';
 import StatusRouter from '../../src/webserver/routes/StatusRouter.js';

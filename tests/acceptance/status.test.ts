@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { container } from 'tsyringe';
-import FastifyWebServer from '../../src/webserver/FastifyWebServer.js';
+import FastifyWebServer from '../../src/webserver/server/FastifyWebServer.js';
 
 describe('/status', () => {
   test('Expect 200 OK: %j', async () => {
@@ -29,6 +29,6 @@ describe('/status', () => {
 
     expect(response.statusCode).toBe(405);
     expect(response.body).toBe('Method Not Allowed');
-    expect(response.headers['allow']).toBe('GET, HEAD');
+    expect(response.headers['allow']).toBe('HEAD, GET');
   });
 });

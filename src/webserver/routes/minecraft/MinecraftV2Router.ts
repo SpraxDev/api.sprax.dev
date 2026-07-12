@@ -1,4 +1,4 @@
-import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyRequest } from 'fastify';
 import Net from 'node:net';
 import { injectable } from 'tsyringe';
 import { ContainerTokens } from '../../../constants.js';
@@ -21,8 +21,8 @@ import MinecraftProfile from '../../../minecraft/value-objects/MinecraftProfile.
 import MinecraftProfileTextures from '../../../minecraft/value-objects/MinecraftProfileTextures.js';
 import UUID from '../../../util/UUID.js';
 import { BadRequestError, NotFoundError } from '../../errors/HttpErrors.js';
-import FastifyWebServer from '../../FastifyWebServer.js';
-import Router from '../Router.js';
+import type { FastifyInstanceWithZod } from '../../server/FastifyWebServer.js';
+import type { default as Router, RouteReturn } from '../Router.js';
 
 @injectable({ token: ContainerTokens.ROUTER })
 export default class MinecraftV2Router implements Router {
@@ -37,193 +37,169 @@ export default class MinecraftV2Router implements Router {
   ) {
   }
 
-  register(server: FastifyInstance): void {
-    server.all('/mc/v2/uuid/:username?', (request, reply): Promise<FastifyReply> => {
-      return FastifyWebServer.handleRestfully(request, reply, {
-        get: async (): Promise<FastifyReply> => {
-          const inputUsername = (request.params as any).username;
-          if (typeof inputUsername !== 'string' || inputUsername.length > 16 || inputUsername.length < 3) {
-            throw new BadRequestError('Invalid username');
-          }
+  getRoutePrefix(): string {
+    return '/mc/v2/';
+  }
 
-          const profile = await this.minecraftProfileService.provideProfileByUsername(inputUsername);
-          if (profile == null) {
-            reply.header('Cache-Control', 'max-age=60, s-maxage=60');
-            throw new NotFoundError('No UUID found for username');
-          }
+  register(server: FastifyInstanceWithZod): void {
+    server.get('/uuid/:username?', async (request, reply): Promise<RouteReturn> => {
+      const inputUsername = (request.params as any).username;
+      if (typeof inputUsername !== 'string' || inputUsername.length > 16 || inputUsername.length < 3) {
+        throw new BadRequestError('Invalid username');
+      }
 
-          return reply
-            .header('Age', Math.floor(profile.ageInSeconds).toString())
-            .header('Cache-Control', 'max-age=60, s-maxage=60, immutable')
-            .send({
-              id: profile.profile.id,
-              name: profile.profile.name,
-            } satisfies UsernameToUuidResponse);
-        },
-      });
+      const profile = await this.minecraftProfileService.provideProfileByUsername(inputUsername);
+      if (profile == null) {
+        reply.header('Cache-Control', 'max-age=60, s-maxage=60');
+        throw new NotFoundError('No UUID found for username');
+      }
+
+      return reply
+        .header('Age', Math.floor(profile.ageInSeconds).toString())
+        .header('Cache-Control', 'max-age=60, s-maxage=60, immutable')
+        .send({
+          id: profile.profile.id,
+          name: profile.profile.name,
+        } satisfies UsernameToUuidResponse);
     });
 
-    server.all('/mc/v2/profile/:user?', (request, reply): Promise<FastifyReply> => {
-      return FastifyWebServer.handleRestfully(request, reply, {
-        get: async (): Promise<FastifyReply> => {
-          const profile = await this.resolveUserToProfile((request.params as any).user);
-          if (profile == null) {
-            reply.header('Cache-Control', 'max-age=60, s-maxage=60');
-            throw new NotFoundError(`Unable to find a profile for the given UUID or username`);
-          }
-          return reply
-            .header('Age', Math.floor(profile.ageInSeconds).toString())
-            .header('Cache-Control', 'max-age=60, s-maxage=60, immutable')
-            .send(profile.profile);
-        },
-      });
+    server.get('/profile/:user?', async (request, reply): Promise<RouteReturn> => {
+      const profile = await this.resolveUserToProfile((request.params as any).user);
+      if (profile == null) {
+        reply.header('Cache-Control', 'max-age=60, s-maxage=60');
+        throw new NotFoundError(`Unable to find a profile for the given UUID or username`);
+      }
+      return reply
+        .header('Age', Math.floor(profile.ageInSeconds).toString())
+        .header('Cache-Control', 'max-age=60, s-maxage=60, immutable')
+        .send(profile.profile);
     });
 
-    server.all('/mc/v2/skin/x-url/:skinArea?', (request, reply): Promise<FastifyReply> => {
-      return FastifyWebServer.handleRestfully(request, reply, {
-        get: async (): Promise<FastifyReply> => {
-          const skinUrl = (request.query as any).url;
-          if (typeof skinUrl !== 'string' || skinUrl.length <= 0) {
-            throw new BadRequestError('Missing or invalid url parameters');
+    server.get('/skin/x-url/:skinArea?', async (request, reply): Promise<RouteReturn> => {
+      const skinUrl = (request.query as any).url;
+      if (typeof skinUrl !== 'string' || skinUrl.length <= 0) {
+        throw new BadRequestError('Missing or invalid url parameters');
+      }
+
+      let parsedSkinUrl: URL;
+      try {
+        parsedSkinUrl = new URL(skinUrl);
+      } catch (err: any) {
+        throw new BadRequestError(`Invalid URL provided`);
+      }
+
+      if (parsedSkinUrl.protocol !== 'https:') {
+        throw new BadRequestError(`Only HTTPS URLs are supported`);
+      }
+
+      // TODO: Cache the response (try to respect the Cache-Control header but enforce a minimum cache time and set a maximum cache time of one month)
+      // TODO: Properly handle errors when requesting the skin (check content-type?)
+
+      let skin: Skin | null = null;
+      if (MinecraftProfileTextures.isOfficialTextureUrl(parsedSkinUrl.href)) {
+        skin = await this.minecraftSkinCache.findByUrl(parsedSkinUrl.href);
+      }
+
+      if (skin == null) {
+        try {
+          skin = await this.minecraftSkinService.fetchAndPersistSkin(parsedSkinUrl.href);
+        } catch (err: any) {
+          if (err instanceof ResolvedToNonUnicastIpError) {
+            throw new BadRequestError(`Failed to fetch skin from URL, it does not resolve to a public IP address`);
           }
-
-          let parsedSkinUrl: URL;
-          try {
-            parsedSkinUrl = new URL(skinUrl);
-          } catch (err: any) {
-            throw new BadRequestError(`Invalid URL provided`);
+          if (err instanceof SkinRequestFailedException) {
+            throw new BadRequestError(`Failed to fetch skin from URL, got status code ${err.httpStatusCode}`);
           }
+          throw err;
+        }
+      }
 
-          if (parsedSkinUrl.protocol !== 'https:') {
-            throw new BadRequestError(`Only HTTPS URLs are supported`);
-          }
+      const renderSlim = this.parseBoolean((request.query as any).slim) ?? this.minecraftSkinTypeDetector.detect(skin.normalized) === 'alex';
+      const skinResponse = await this.processSkinRequest(request, skin, renderSlim);
 
-          // TODO: Cache the response (try to respect the Cache-Control header but enforce a minimum cache time and set a maximum cache time of one month)
-          // TODO: Properly handle errors when requesting the skin (check content-type?)
+      reply.header('Content-Type', 'image/png');
+      if (skinResponse.forceDownload) {
+        reply.header('Content-Disposition', `attachment; filename="x-url${skinResponse.skinArea != null ? `-${skinResponse.skinArea}` : ''}.png"`);
+        reply.header('Content-Type', 'application/octet-stream');
+      }
 
-          let skin: Skin | null = null;
-          if (MinecraftProfileTextures.isOfficialTextureUrl(parsedSkinUrl.href)) {
-            skin = await this.minecraftSkinCache.findByUrl(parsedSkinUrl.href);
-          }
-
-          if (skin == null) {
-            try {
-              skin = await this.minecraftSkinService.fetchAndPersistSkin(parsedSkinUrl.href);
-            } catch (err: any) {
-              if (err instanceof ResolvedToNonUnicastIpError) {
-                throw new BadRequestError(`Failed to fetch skin from URL, it does not resolve to a public IP address`);
-              }
-              if (err instanceof SkinRequestFailedException) {
-                throw new BadRequestError(`Failed to fetch skin from URL, got status code ${err.httpStatusCode}`);
-              }
-              throw err;
-            }
-          }
-
-          const renderSlim = this.parseBoolean((request.query as any).slim) ?? this.minecraftSkinTypeDetector.detect(skin.normalized) === 'alex';
-          const skinResponse = await this.processSkinRequest(request, skin, renderSlim);
-
-          reply.header('Content-Type', 'image/png');
-          if (skinResponse.forceDownload) {
-            reply.header('Content-Disposition', `attachment; filename="x-url${skinResponse.skinArea != null ? `-${skinResponse.skinArea}` : ''}.png"`);
-            reply.header('Content-Type', 'application/octet-stream');
-          }
-
-          return reply
-            // .header('Age', Math.floor(profile.ageInSeconds).toString())
-            .header('Cache-Control', 'max-age=60, s-maxage=60, immutable')
-            .send(skinResponse.pngBody);
-        },
-      });
+      return reply
+        // .header('Age', Math.floor(profile.ageInSeconds).toString())
+        .header('Cache-Control', 'max-age=60, s-maxage=60, immutable')
+        .send(skinResponse.pngBody);
     });
 
-    server.all('/mc/v2/skin/:user/:skinArea?', (request, reply): Promise<FastifyReply> => {
-      return FastifyWebServer.handleRestfully(request, reply, {
-        get: async (): Promise<FastifyReply> => {
-          const profile = await this.resolveUserToProfile((request.params as any).user);
-          if (profile == null) {
-            reply.header('Cache-Control', 'max-age=60, s-maxage=60');
-            throw new NotFoundError(`Unable to find a profile for the given UUID or username`);
-          }
-          const minecraftProfile = new MinecraftProfile(profile.profile);
+    server.get('/skin/:user/:skinArea?', async (request, reply): Promise<RouteReturn> => {
+      const profile = await this.resolveUserToProfile((request.params as any).user);
+      if (profile == null) {
+        reply.header('Cache-Control', 'max-age=60, s-maxage=60');
+        throw new NotFoundError(`Unable to find a profile for the given UUID or username`);
+      }
+      const minecraftProfile = new MinecraftProfile(profile.profile);
 
-          const renderSlim = this.parseBoolean((request.query as any).slim) ?? minecraftProfile.parseTextures()?.slimPlayerModel ?? minecraftProfile.determineDefaultSkin() === 'alex';
-          const skin = await this.minecraftSkinService.fetchEffectiveSkin(new MinecraftProfile(profile.profile));
+      const renderSlim = this.parseBoolean((request.query as any).slim) ?? minecraftProfile.parseTextures()?.slimPlayerModel ?? minecraftProfile.determineDefaultSkin() === 'alex';
+      const skin = await this.minecraftSkinService.fetchEffectiveSkin(new MinecraftProfile(profile.profile));
 
-          const skinResponse = await this.processSkinRequest(request, skin, renderSlim);
+      const skinResponse = await this.processSkinRequest(request, skin, renderSlim);
 
-          reply.header('Content-Type', 'image/png');
-          if (skinResponse.forceDownload) {
-            reply.header('Content-Disposition', `attachment; filename="${profile.profile.name}${skinResponse.skinArea != null ? `-${skinResponse.skinArea}` : ''}.png"`);
-            reply.header('Content-Type', 'application/octet-stream');
-          }
+      reply.header('Content-Type', 'image/png');
+      if (skinResponse.forceDownload) {
+        reply.header('Content-Disposition', `attachment; filename="${profile.profile.name}${skinResponse.skinArea != null ? `-${skinResponse.skinArea}` : ''}.png"`);
+        reply.header('Content-Type', 'application/octet-stream');
+      }
 
-          return reply
-            .header('Age', Math.floor(profile.ageInSeconds).toString())
-            .header('Cache-Control', 'max-age=60, s-maxage=60, immutable')
-            .send(skinResponse.pngBody);
-        },
-      });
+      return reply
+        .header('Age', Math.floor(profile.ageInSeconds).toString())
+        .header('Cache-Control', 'max-age=60, s-maxage=60, immutable')
+        .send(skinResponse.pngBody);
     });
 
-    server.all('/mc/v2/server/blocklist', (request, reply): Promise<FastifyReply> => {
-      return FastifyWebServer.handleRestfully(request, reply, {
-        get: async (): Promise<FastifyReply> => {
-          const blocklist = await this.serverBlocklistService.provideBlocklist();
-          return reply
-            .header('Cache-Control', 'max-age=120, s-maxage=120')
-            .send(blocklist);
-        },
-      });
+    server.get('/server/blocklist', async (_request, reply): Promise<RouteReturn> => {
+      const blocklist = await this.serverBlocklistService.provideBlocklist();
+      return reply
+        .header('Cache-Control', 'max-age=120, s-maxage=120')
+        .send(blocklist);
     });
 
-    server.all('/mc/v2/server/blocklist/check', (request, reply): Promise<FastifyReply> => {
-      return FastifyWebServer.handleRestfully(request, reply, {
-        get: async (): Promise<FastifyReply> => {
-          const inputHost = (request.query as any).host;
-          if (typeof inputHost !== 'string') {
-            throw new BadRequestError('Missing or invalid query parameter "host"');
-          }
+    server.get('/server/blocklist/check', async (request, reply): Promise<RouteReturn> => {
+      const inputHost = (request.query as any).host;
+      if (typeof inputHost !== 'string') {
+        throw new BadRequestError('Missing or invalid query parameter "host"');
+      }
 
-          let blocklist;
-          try {
-            blocklist = await this.serverBlocklistService.checkBlocklist(inputHost);
-          } catch (err: any) {
-            if (err instanceof InvalidHostError) {
-              throw new BadRequestError(err.message);
-            }
-            throw err;
-          }
-          const responseBody: { [key: string]: boolean } = {};
-          for (const [host, isBlocked] of blocklist) {
-            responseBody[host] = isBlocked;
-          }
-          return reply
-            .header('Cache-Control', 'max-age=120, s-maxage=120')
-            .send(responseBody);
-        },
-      });
+      let blocklist;
+      try {
+        blocklist = await this.serverBlocklistService.checkBlocklist(inputHost);
+      } catch (err: any) {
+        if (err instanceof InvalidHostError) {
+          throw new BadRequestError(err.message);
+        }
+        throw err;
+      }
+      const responseBody: { [key: string]: boolean } = {};
+      for (const [host, isBlocked] of blocklist) {
+        responseBody[host] = isBlocked;
+      }
+      return reply
+        .header('Cache-Control', 'max-age=120, s-maxage=120')
+        .send(responseBody);
     });
 
-    server.all('/mc/v2/server/blocklist/discovered', (request, reply): Promise<FastifyReply> => {
-      return FastifyWebServer.handleRestfully(request, reply, {
-        get: async (): Promise<FastifyReply> => {
-          const blocklist = await this.serverBlocklistService.provideBlocklistForKnownHosts();
-          const responseBody: { [key: string]: string } = {};
-          for (const listEntry of blocklist) {
-            if (listEntry.host != null) {
-              responseBody[listEntry.sha1.toString('hex')] = listEntry.host;
-            }
-          }
+    server.get('/server/blocklist/discovered', async (_request, reply): Promise<RouteReturn> => {
+      const blocklist = await this.serverBlocklistService.provideBlocklistForKnownHosts();
+      const responseBody: { [key: string]: string } = {};
+      for (const listEntry of blocklist) {
+        if (listEntry.host != null) {
+          responseBody[listEntry.sha1.toString('hex')] = listEntry.host;
+        }
+      }
 
-          return reply
-            .header('Cache-Control', 'max-age=120, s-maxage=120')
-            .send(responseBody);
-        },
-      });
+      return reply
+        .header('Cache-Control', 'max-age=120, s-maxage=120')
+        .send(responseBody);
     });
 
-    server.all('/mc/v2/server/ping', (request, reply): Promise<FastifyReply> => {
+    server.get('/server/ping', async (request, reply): Promise<RouteReturn> => {
       const validateHost = (inputHost: string) => {
         if (Net.isIP(inputHost) > 0) {
           return;
@@ -234,37 +210,33 @@ export default class MinecraftV2Router implements Router {
         }
       };
 
-      return FastifyWebServer.handleRestfully(request, reply, {
-        get: async (): Promise<FastifyReply> => {
-          const inputHost = (request.query as any).host;
-          if (typeof inputHost !== 'string') {
-            throw new BadRequestError('Missing or invalid query parameter "host"');
-          }
-          const inputPort = (request.query as any).port;
-          if (inputPort != null && (typeof inputPort !== 'string' || /^\d+$/.exec(inputPort) == null)) {
-            throw new BadRequestError('Missing or invalid query parameter "port"');
-          }
+      const inputHost = (request.query as any).host;
+      if (typeof inputHost !== 'string') {
+        throw new BadRequestError('Missing or invalid query parameter "host"');
+      }
+      const inputPort = (request.query as any).port;
+      if (inputPort != null && (typeof inputPort !== 'string' || /^\d+$/.exec(inputPort) == null)) {
+        throw new BadRequestError('Missing or invalid query parameter "port"');
+      }
 
-          const port = inputPort != null ? parseInt(inputPort, 10) : 25565;
-          validateHost(inputHost);
+      const port = inputPort != null ? parseInt(inputPort, 10) : 25565;
+      validateHost(inputHost);
 
-          const serverStatus = await this.minecraftServerStatusService.provideServerStatus(inputHost, port);
+      const serverStatus = await this.minecraftServerStatusService.provideServerStatus(inputHost, port);
 
-          reply
-            .header('Cache-Control', 'max-age=30, s-maxage=30')
-            .header('Age', serverStatus.ageInSeconds);
+      reply
+        .header('Cache-Control', 'max-age=30, s-maxage=30')
+        .header('Age', serverStatus.ageInSeconds);
 
-          if (serverStatus.serverStatus != null) {
-            return reply
-              .send(serverStatus.serverStatus);
-          }
+      if (serverStatus.serverStatus != null) {
+        return reply
+          .send(serverStatus.serverStatus);
+      }
 
-          // FIXME: Unify success and "error" response content/layout
-          return reply
-            .status(200)
-            .send({ online: false });
-        },
-      });
+      // FIXME: Unify success and "error" response content/layout
+      return reply
+        .status(200)
+        .send({ online: false });
     });
   }
 

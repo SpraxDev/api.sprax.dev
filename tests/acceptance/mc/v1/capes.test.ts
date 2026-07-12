@@ -2,7 +2,7 @@ import '../../../../src/container-init.js';
 import { FastifyInstance, type LightMyRequestResponse } from 'fastify';
 import Sharp from 'sharp';
 import { container } from 'tsyringe';
-import FastifyWebServer from '../../../../src/webserver/FastifyWebServer.js';
+import FastifyWebServer from '../../../../src/webserver/server/FastifyWebServer.js';
 import { EXISTING_MC_ID, EXISTING_MC_ID_WITH_HYPHENS, EXISTING_MC_NAME } from '../../../test-constants.js';
 
 describe('/mc/v1/capes/all', () => {
@@ -39,7 +39,7 @@ describe('/mc/v1/capes/all', () => {
 
     expect(response.statusCode).toBe(405);
     expect(response.body).toBe('Method Not Allowed');
-    expect(response.headers['allow']).toBe('GET, HEAD');
+    expect(response.headers['allow']).toBe('HEAD, GET');
   });
 });
 
@@ -189,7 +189,7 @@ describe('/mc/v1/capes/:capeType/:user?', () => {
 
     expect(response.statusCode).toBe(405);
     expect(response.body).toBe('Method Not Allowed');
-    expect(response.headers['allow']).toBe('GET, HEAD');
+    expect(response.headers['allow']).toBe('HEAD, GET');
   });
 });
 
@@ -361,6 +361,6 @@ describe('/mc/v1/capes/:capeType/:user/render', () => {
 
     expect(response.statusCode).toBe(405);
     expect(response.body).toBe('Method Not Allowed');
-    expect(response.headers['allow']).toBe('GET, HEAD');
+    expect(response.headers['allow']).toBe('HEAD, GET');
   });
 });

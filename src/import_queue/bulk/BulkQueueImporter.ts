@@ -136,7 +136,7 @@ export default class BulkQueueImporter {
           },
           select: { id: true },
         });
-      }, { timeout: 60 * 60 * 1000 /* 1h */ });
+      }, { timeout: 60 * 60 * 60 * 1000 /* 60h */ });
 
       return result!;
     } finally {
