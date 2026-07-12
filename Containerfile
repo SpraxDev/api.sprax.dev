@@ -59,13 +59,13 @@ USER node
 COPY --chown=node:node LICENSE README.md ./
 COPY --chown=node:node package.json package-lock.json tsconfig.json prisma.config.ts ./
 
-RUN npm clean-install
+RUN npm clean-install --allow-git=root
 COPY --chown=node:node prisma/ prisma/
 COPY --chown=node:node src/ src/
 
 RUN npm run prisma:generate && \
     npm run build
-RUN npm clean-install --omit dev
+RUN npm clean-install --allow-git=root --omit dev
 
 
 FROM base AS prod
