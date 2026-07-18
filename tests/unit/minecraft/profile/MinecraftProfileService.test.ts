@@ -1,6 +1,6 @@
 import { vitest } from 'vitest';
 import { DeepMockProxy, mockDeep } from 'vitest-mock-extended';
-import MinecraftApiClient, { type UsernameToUuidResponse } from '../../../../src/minecraft/MinecraftApiClient.js';
+import MinecraftApiClient from '../../../../src/minecraft/MinecraftApiClient.js';
 import ProfilePersister from '../../../../src/minecraft/persistance/base/ProfilePersister.js';
 import ByPlayerProfileLazyPersister from '../../../../src/minecraft/persistance/ByPlayerProfileLazyPersister.js';
 import MinecraftProfileCache from '../../../../src/minecraft/profile/MinecraftProfileCache.js';

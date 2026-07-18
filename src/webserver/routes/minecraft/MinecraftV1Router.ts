@@ -5,15 +5,8 @@ import Sharp from 'sharp';
 import { injectable } from 'tsyringe';
 import { ContainerTokens } from '../../../constants.js';
 import ResolvedToNonUnicastIpError from '../../../http/dns/errors/ResolvedToNonUnicastIpError.js';
-import { CAPE_TYPE_STRINGS, CapeType } from '../../../minecraft/cape/CapeType.js';
-import Cape2dRenderer from '../../../minecraft/cape/renderer/Cape2dRenderer.js';
-import UserCapeService from '../../../minecraft/cape/UserCapeService.js';
 import ImageManipulator from '../../../minecraft/image/ImageManipulator.js';
-import type { UsernameToUuidResponse } from '../../../minecraft/MinecraftApiClient.js';
 import MinecraftProfileService, { Profile } from '../../../minecraft/profile/MinecraftProfileService.js';
-import ServerBlocklistService, {
-  InvalidHostError,
-} from '../../../minecraft/server/blocklist/ServerBlocklistService.js';
 import SkinImageManipulator from '../../../minecraft/skin/manipulator/SkinImageManipulator.js';
 import MinecraftSkinCache from '../../../minecraft/skin/MinecraftSkinCache.js';
 import MinecraftSkinService, {
@@ -37,9 +30,6 @@ export default class MinecraftV1Router implements Router {
     private readonly minecraftSkinService: MinecraftSkinService,
     private readonly minecraftSkinCache: MinecraftSkinCache,
     private readonly skinImage2DRenderer: SkinImage2DRenderer,
-    private readonly userCapeService: UserCapeService,
-    private readonly cape2dRenderer: Cape2dRenderer,
-    private readonly serverBlocklistService: ServerBlocklistService,
     private readonly minecraftSkinTypeDetector: MinecraftSkinTypeDetector,
     private readonly legacyMinecraft3DRenderer: LegacyMinecraft3DRenderer,
   ) {
@@ -50,91 +40,6 @@ export default class MinecraftV1Router implements Router {
   }
 
   register(server: FastifyInstanceWithZod): void {
-    server.get('/uuid/:username?', async (request, reply): Promise<RouteReturn> => {
-      const inputUsername = (request.params as any).username;
-      if (typeof inputUsername !== 'string' || inputUsername.length <= 0) {
-        throw ApiV1BadRequestError.missingOrInvalidUrlParameter('name', 'name.length > 0');
-      }
-      if (inputUsername.length > 16 || inputUsername.length < 3) {
-        reply.header('Cache-Control', 'max-age=300, s-maxage=300');
-        throw ApiV1NotFoundError.uuidForGivenUsernameNotFound();
-      }
-
-      const profile = await this.minecraftProfileService.provideProfileByUsername(inputUsername);
-      if (profile == null) {
-        reply.header('Cache-Control', 'max-age=120, s-maxage=120');
-        throw ApiV1NotFoundError.uuidForGivenUsernameNotFound();
-      }
-
-      return reply
-        .header('Age', Math.floor(profile.ageInSeconds).toString())
-        .header('Cache-Control', this.createCacheControlHeaderWithImmutable(60))
-        .send({
-          id: profile.profile.id,
-          name: profile.profile.name,
-        } satisfies UsernameToUuidResponse);
-    });
-
-    server.get('/profile/:user?', async (request, reply): Promise<RouteReturn> => {
-      const profile = await this.resolveUserToProfile((request.params as any).user);
-      if (profile == null) {
-        reply.header('Cache-Control', 'max-age=60, s-maxage=60');
-        throw ApiV1NotFoundError.profileForGivenUserNotFound();
-      }
-
-      let sendProcessedProfile = false;
-
-      const inputRaw = this.parseBoolean((request.query as any).raw);
-      const inputFull = this.parseBoolean((request.query as any).full);
-      if (inputRaw != null) {
-        sendProcessedProfile = !inputRaw;
-      } else if (inputFull != null) {
-        sendProcessedProfile = inputFull;
-      }
-
-      reply
-        .header('Age', Math.floor(profile.ageInSeconds).toString())
-        .header('Cache-Control', this.createCacheControlHeaderWithImmutable(60));
-
-      if (!sendProcessedProfile) {
-        return reply
-          .send({
-            legacy: false,
-            ...profile.profile,
-          });
-      }
-
-      const minecraftProfile = new MinecraftProfile(profile.profile);
-      return reply
-        .send({
-          id: profile.profile.id,
-          id_hyphens: profile.profile.id.replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5'),
-          name: profile.profile.name,
-          legacy: false,
-
-          textures: {
-            skinUrl: minecraftProfile.parseTextures()?.skinUrl ?? null,
-            capeUrl: minecraftProfile.parseTextures()?.capeUrl ?? null,
-            texture_value: minecraftProfile.getTexturesProperty()?.value,
-            texture_signature: minecraftProfile.getTexturesProperty()?.signature,
-          },
-
-          profile_actions: [],
-          name_history: [],
-        });
-    });
-
-    server.get('/history/:user?', (_request, reply): RouteReturn => {
-      return reply
-        .status(410)
-        .header('Cache-Control', 'max-age=300, s-maxage=300')
-        .send({
-          error: 'Gone',
-          message: 'This endpoint has been removed as Mojang removed the username history API ' +
-            '(https://web.archive.org/web/20221006001721/https://help.minecraft.net/hc/en-us/articles/8969841895693-Username-History-API-Removal-FAQ-)',
-        });
-    });
-
     server.get('/skin/x-url/:skinArea?', async (request, reply): Promise<RouteReturn> => {
       const skinUrl = (request.query as any).url;
       if (typeof skinUrl !== 'string' || skinUrl.length <= 0) {
@@ -300,142 +205,6 @@ export default class MinecraftV1Router implements Router {
         .header('Age', Math.floor(profile.ageInSeconds).toString())
         .header('Cache-Control', this.createCacheControlHeaderWithImmutable(60))
         .send(skinResponse.pngBody);
-    });
-
-    server.get('/capes/all/:user?', (_request, reply): RouteReturn => {
-      return reply
-        .status(410)
-        .header('Cache-Control', 'max-age=300, s-maxage=300')
-        .send({
-          error: 'Gone',
-          message: 'This endpoint was never intended for the general public and only returned the internal IDs ' +
-            'used by this API to identify the skins (or null) – Please use one of the other cape endpoints instead',
-        });
-    });
-
-    server.get('/capes/:capeType/:user?', async (request, reply): Promise<RouteReturn> => {
-      const inputCapeType = (request.params as any).capeType;
-      if (typeof inputCapeType !== 'string' || !CAPE_TYPE_STRINGS.includes(inputCapeType.toUpperCase())) {
-        throw ApiV1BadRequestError.missingOrInvalidUrlParameter('capeType', `capeType in [${CAPE_TYPE_STRINGS.join(', ')}]`);
-      }
-      const capeType = inputCapeType.toUpperCase() as CapeType;
-
-      const profile = await this.resolveUserToProfile((request.params as any).user);
-      if (profile == null) {
-        reply.header('Cache-Control', 'max-age=60, s-maxage=60');
-        throw ApiV1NotFoundError.profileForGivenUserNotFound();
-      }
-
-      const minecraftProfile = new MinecraftProfile(profile.profile);
-      const capeResponse = await this.userCapeService.provide(minecraftProfile, capeType);
-      if (capeResponse == null) {
-        reply.header('Cache-Control', 'max-age=60, s-maxage=60');
-        throw new ApiV1NotFoundError('User does not have a cape for that type');
-      }
-
-      const forceDownload = this.parseBoolean((request.query as any).download) ?? false;
-
-      reply.header('Content-Type', capeResponse.mimeType);
-      if (forceDownload) {
-        reply.header('Content-Disposition', `attachment; filename="${profile.profile.name}-${capeType.toLowerCase()}.png"`);
-        reply.header('Content-Type', 'application/octet-stream');
-      }
-
-      return reply
-        .header('Cache-Control', 'max-age=60, s-maxage=60')
-        .send(capeResponse.image);
-    });
-
-    server.get('/capes/:capeType/:user/render', async (request, reply): Promise<RouteReturn> => {
-      const inputCapeType = (request.params as any).capeType;
-      if (typeof inputCapeType !== 'string' || !CAPE_TYPE_STRINGS.includes(inputCapeType.toUpperCase())) {
-        throw ApiV1BadRequestError.missingOrInvalidUrlParameter('capeType', `capeType in [${CAPE_TYPE_STRINGS.join(', ')}]`);
-      }
-
-      const size = this.parseSize((request.query as any).size) ?? 512;
-      const capeType = inputCapeType.toUpperCase() as CapeType;
-
-      if (capeType == CapeType.LABYMOD) {
-        return reply
-          .status(503)
-          .send({
-            error: 'Service Unavailable',
-            message: 'Rendering LabyMod-Capes is currently not supported',
-          });
-      }
-
-      const profile = await this.resolveUserToProfile((request.params as any).user);
-      if (profile == null) {
-        reply.header('Cache-Control', 'max-age=60, s-maxage=60');
-        throw ApiV1NotFoundError.profileForGivenUserNotFound();
-      }
-
-      const minecraftProfile = new MinecraftProfile(profile.profile);
-      const capeResponse = await this.userCapeService.provide(minecraftProfile, capeType);
-      if (capeResponse == null) {
-        reply.header('Cache-Control', 'max-age=60, s-maxage=60');
-        throw new ApiV1NotFoundError('User does not have a cape for that type');
-      }
-
-      const capeRenderResult = await this.cape2dRenderer.renderCape(capeResponse.image, capeType);
-      const renderCapeImage = await capeRenderResult.toPngBuffer({ width: size, height: size });
-
-      const forceDownload = this.parseBoolean((request.query as any).download) ?? false;
-
-      reply.header('Content-Type', 'image/png');
-      if (forceDownload) {
-        reply.header('Content-Disposition', `attachment; filename="${profile.profile.name}-${capeType.toLowerCase()}.png"`);
-        reply.header('Content-Type', 'application/octet-stream');
-      }
-
-      return reply
-        .header('Cache-Control', 'max-age=60, s-maxage=60')
-        .send(renderCapeImage);
-    });
-
-    server.get('/servers/blocked', async (_request, reply): Promise<RouteReturn> => {
-      const blocklist = await this.serverBlocklistService.provideBlocklist();
-      return reply
-        .header('Cache-Control', 'max-age=120, s-maxage=120')
-        .send(blocklist);
-    });
-
-    server.get('/servers/blocked/known', async (_request, reply): Promise<RouteReturn> => {
-      const blocklist = await this.serverBlocklistService.provideBlocklistForKnownHosts();
-      const responseBody: { [key: string]: string } = {};
-      for (const listEntry of blocklist) {
-        if (listEntry.host != null) {
-          responseBody[listEntry.sha1.toString('hex')] = listEntry.host;
-        }
-      }
-
-      return reply
-        .header('Cache-Control', 'max-age=120, s-maxage=120')
-        .send(responseBody);
-    });
-
-    server.get('/servers/blocked/check', async (request, reply): Promise<RouteReturn> => {
-      const inputHost = (request.query as any).host;
-      if (typeof inputHost !== 'string' || inputHost.length <= 0) {
-        throw ApiV1BadRequestError.missingOrInvalidQueryParameter('host', 'host.length > 0');
-      }
-
-      let blocklist;
-      try {
-        blocklist = await this.serverBlocklistService.checkBlocklist(inputHost);
-      } catch (err: any) {
-        if (err instanceof InvalidHostError) {
-          throw ApiV1BadRequestError.missingOrInvalidQueryParameter('host', 'A valid IPv4, IPv6 or domain');
-        }
-        throw err;
-      }
-      const responseBody: { [key: string]: boolean } = {};
-      for (const [host, isBlocked] of blocklist) {
-        responseBody[host] = isBlocked;
-      }
-      return reply
-        .header('Cache-Control', 'max-age=120, s-maxage=120')
-        .send(responseBody);
     });
 
     server.get('/render/block', async (request, reply): Promise<RouteReturn> => {

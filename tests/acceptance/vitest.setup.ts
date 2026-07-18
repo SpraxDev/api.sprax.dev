@@ -42,10 +42,22 @@ import ThirdPartyMinecraftApiClient from '../../src/minecraft/ThirdPartyMinecraf
 import ProxyServerConfigurationProvider from '../../src/net/proxy/ProxyServerConfigurationProvider.js';
 import SocksProxyServerConnector from '../../src/net/proxy/SocksProxyServerConnector.js';
 import ProxyPoolHttpClientHealthcheckTask from '../../src/task_queue/tasks/ProxyPoolHttpClientHealthcheckTask.js';
-import FastifyWebServer from '../../src/webserver/server/FastifyWebServer.js';
+import CacheHeaderHelper from '../../src/util/http/CacheHeaderHelper.js';
+import MinecraftApiV1LegacyHelper from '../../src/util/http/MinecraftApiV1LegacyHelper.js';
+import MinecraftProfileByNameOrIdProvider from '../../src/util/http/MinecraftProfileByNameOrIdProvider.js';
+import AllCapesRouter from '../../src/webserver/routes/mc/v1/capes/AllCapesRouter.js';
+import CapeRawRouter from '../../src/webserver/routes/mc/v1/capes/CapeRawRouter.js';
+import CapeRenderRouter from '../../src/webserver/routes/mc/v1/capes/CapeRenderRouter.js';
+import NameHistoryRouter from '../../src/webserver/routes/mc/v1/NameHistoryRouter.js';
+import ProfileRouter from '../../src/webserver/routes/mc/v1/ProfileRouter.js';
+import BlockedCheckRouter from '../../src/webserver/routes/mc/v1/servers/BlockedCheckRouter.js';
+import BlockedKnownRouter from '../../src/webserver/routes/mc/v1/servers/BlockedKnownRouter.js';
+import BlockedRouter from '../../src/webserver/routes/mc/v1/servers/BlockedRouter.js';
+import UuidRouter from '../../src/webserver/routes/mc/v1/UuidRouter.js';
 import MetricsRouter from '../../src/webserver/routes/MetricsRouter.js';
 import MinecraftV1Router from '../../src/webserver/routes/minecraft/MinecraftV1Router.js';
 import StatusRouter from '../../src/webserver/routes/StatusRouter.js';
+import FastifyWebServer from '../../src/webserver/server/FastifyWebServer.js';
 
 beforeAll(async () => {
   (SimpleHttpClient as any).DEBUG_LOGGING = false;
@@ -103,34 +115,48 @@ beforeEach(async () => {
     ),
     new MinecraftSkinCache(container.resolve(DatabaseClient)),
     new SkinImage2DRenderer(),
-    new UserCapeService(
-      new CapeCache(container.resolve(DatabaseClient)),
-      new UserCapeProvider([
-        new MojangCapeProvider(
-          autoProxiedHttpClient,
-          new CapeCache(container.resolve(DatabaseClient)),
-        ),
-        new LabymodCapeProvider(autoProxiedHttpClient),
-        new OptifineCapeProvider(autoProxiedHttpClient),
-      ]),
-      new CapePersister(container.resolve(DatabaseClient)),
-      new ProfileSeenCapePersister(container.resolve(DatabaseClient)),
-    ),
-    new Cape2dRenderer(),
-    new ServerBlocklistService(
-      new FqdnValidator(),
-      container.resolve(DatabaseClient),
-      new ServerBlocklistPersister(container.resolve(DatabaseClient)),
-    ),
     new MinecraftSkinTypeDetector(),
     new LegacyMinecraft3DRenderer(new MinecraftSkinNormalizer()),
   );
+  const minecraftProfileByNameOrIdProvider = new MinecraftProfileByNameOrIdProvider(minecraftProfileService);
+  const legacyHelper = new MinecraftApiV1LegacyHelper(minecraftProfileByNameOrIdProvider);
+  const cacheHeaderHelper = new CacheHeaderHelper();
+  const userCapeService = new UserCapeService(
+    new CapeCache(container.resolve(DatabaseClient)),
+    new UserCapeProvider([
+      new MojangCapeProvider(
+        autoProxiedHttpClient,
+        new CapeCache(container.resolve(DatabaseClient)),
+      ),
+      new LabymodCapeProvider(autoProxiedHttpClient),
+      new OptifineCapeProvider(autoProxiedHttpClient),
+    ]),
+    new CapePersister(container.resolve(DatabaseClient)),
+    new ProfileSeenCapePersister(container.resolve(DatabaseClient)),
+  );
+  const serverBlocklistService = new ServerBlocklistService(
+    new FqdnValidator(),
+    container.resolve(DatabaseClient),
+    new ServerBlocklistPersister(container.resolve(DatabaseClient)),
+  );
+
   container.registerInstance(FastifyWebServer,
     new FastifyWebServer(
       [
         new StatusRouter(),
         new MetricsRouter(metrics),
+
         minecraftV1Router,
+
+        new ProfileRouter(legacyHelper, cacheHeaderHelper),
+        new UuidRouter(minecraftProfileService, cacheHeaderHelper),
+        new NameHistoryRouter(),
+        new AllCapesRouter(),
+        new CapeRawRouter(legacyHelper, userCapeService),
+        new CapeRenderRouter(legacyHelper, userCapeService, new Cape2dRenderer()),
+        new BlockedRouter(serverBlocklistService),
+        new BlockedKnownRouter(serverBlocklistService),
+        new BlockedCheckRouter(serverBlocklistService),
       ],
       metrics,
     ),
