@@ -145,6 +145,7 @@ export default class FastifyWebServer {
 
         .header('Content-Security-Policy', `default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none';`)
         .header('Cross-Origin-Opener-Policy', 'same-origin')
+        .header('Cross-Origin-Resource-Policy', 'cross-origin')
         .header('X-Frame-Options', 'DENY')
         .header('X-Content-Type-Options', 'nosniff')
 
