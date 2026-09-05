@@ -1,4 +1,5 @@
 import type * as PrismaClient from '../../../database/prisma-client/client.js';
+import { ByteUtils } from '@spraxdev/node-commons/util';
 import { singleton } from 'tsyringe';
 import AutoProxiedHttpClient from '../../../http/clients/AutoProxiedHttpClient.js';
 import SkinPersister from '../../../minecraft/persistance/base/SkinPersister.js';
@@ -9,7 +10,6 @@ import MinecraftSkinCache from '../../../minecraft/skin/MinecraftSkinCache.js';
 import { SkinRequestFailedException } from '../../../minecraft/skin/MinecraftSkinService.js';
 import MinecraftProfileTextures from '../../../minecraft/value-objects/MinecraftProfileTextures.js';
 import YggdrasilSignatureChecker from '../../../minecraft/yggdrasil/YggdrasilSignatureChecker.js';
-import ByteUtils from '../../../util/ByteUtils.js';
 import PayloadProcessor from './PayloadProcessor.js';
 
 @singleton()

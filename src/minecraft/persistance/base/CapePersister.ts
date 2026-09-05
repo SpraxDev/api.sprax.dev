@@ -1,7 +1,7 @@
 import type * as PrismaClient from '../../../database/prisma-client/client.js';
+import { ByteUtils } from '@spraxdev/node-commons/util';
 import { singleton } from 'tsyringe';
 import DatabaseClient from '../../../database/DatabaseClient.js';
-import ByteUtils from '../../../util/ByteUtils.js';
 import ImageManipulator from '../../image/ImageManipulator.js';
 import MinecraftProfileTextures from '../../value-objects/MinecraftProfileTextures.js';
 

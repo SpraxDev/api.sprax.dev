@@ -1,5 +1,5 @@
+import { ByteUtils } from '@spraxdev/node-commons/util';
 import { singleton } from 'tsyringe';
-import ByteUtils from '../../util/ByteUtils.js';
 import SentrySdk from '../../util/SentrySdk.js';
 import CapePersister from '../persistance/base/CapePersister.js';
 import ProfileSeenCapePersister from '../persistance/base/ProfileSeenCapePersister.js';

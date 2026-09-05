@@ -1,10 +1,10 @@
+import { ByteUtils } from '@spraxdev/node-commons/util';
 import { singleton } from 'tsyringe';
 import type * as PrismaClient from '../../../database/prisma-client/client.js';
 import SkinPersister from '../../../minecraft/persistance/base/SkinPersister.js';
 import MinecraftSkinNormalizer from '../../../minecraft/skin/manipulator/MinecraftSkinNormalizer.js';
 import SkinImageManipulator from '../../../minecraft/skin/manipulator/SkinImageManipulator.js';
 import MinecraftSkinCache from '../../../minecraft/skin/MinecraftSkinCache.js';
-import ByteUtils from '../../../util/ByteUtils.js';
 import PayloadProcessor from './PayloadProcessor.js';
 
 @singleton()

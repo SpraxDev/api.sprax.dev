@@ -1,10 +1,10 @@
 import type * as PrismaClient from '../../../database/prisma-client/client.js';
+import { ByteUtils } from '@spraxdev/node-commons/util';
 import { singleton } from 'tsyringe';
 import { CAPE_TYPE_STRINGS, CapeType } from '../../../minecraft/cape/CapeType.js';
 import UserCapeService from '../../../minecraft/cape/UserCapeService.js';
 import MinecraftProfileService from '../../../minecraft/profile/MinecraftProfileService.js';
 import MinecraftProfile from '../../../minecraft/value-objects/MinecraftProfile.js';
-import ByteUtils from '../../../util/ByteUtils.js';
 import PayloadProcessor from './PayloadProcessor.js';
 
 @singleton()

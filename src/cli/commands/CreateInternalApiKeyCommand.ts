@@ -1,8 +1,8 @@
+import { ByteUtils } from '@spraxdev/node-commons/util';
 import { injectable } from 'tsyringe';
 import { ContainerTokens } from '../../constants.js';
 import DatabaseClient from '../../database/DatabaseClient.js';
 import MinecraftProfileService from '../../minecraft/profile/MinecraftProfileService.js';
-import ByteUtils from '../../util/ByteUtils.js';
 import CliCommand from './CliCommand.js';
 
 @injectable({ token: ContainerTokens.CLI_COMMAND })

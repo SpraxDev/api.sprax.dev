@@ -1,7 +1,7 @@
 import type { Prisma } from '../../../database/prisma-client/client.js';
+import { ByteUtils } from '@spraxdev/node-commons/util';
 import { singleton } from 'tsyringe';
 import DatabaseClient from '../../../database/DatabaseClient.js';
-import ByteUtils from '../../../util/ByteUtils.js';
 
 @singleton()
 export default class ServerBlocklistPersister {

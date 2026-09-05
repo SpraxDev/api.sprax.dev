@@ -1,7 +1,7 @@
+import { ByteUtils } from '@spraxdev/node-commons/util';
 import { injectable } from 'tsyringe';
 import { ContainerTokens } from '../../../constants.js';
 import AutoProxiedHttpClient from '../../../http/clients/AutoProxiedHttpClient.js';
-import ByteUtils from '../../../util/ByteUtils.js';
 import MinecraftProfile from '../../value-objects/MinecraftProfile.js';
 import CapeCache from '../CapeCache.js';
 import { CapeType } from '../CapeType.js';

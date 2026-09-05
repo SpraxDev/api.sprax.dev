@@ -1,7 +1,7 @@
 import type * as PrismaClient from '../../../database/prisma-client/client.js';
 import type AutoProxiedHttpClient from '../../../http/clients/AutoProxiedHttpClient.js';
-import ByteUtils from '../../../util/ByteUtils.js';
 import type BulkImporter from './BulkImporter.js';
+import { ByteUtils } from '@spraxdev/node-commons/util';
 
 export default class SkinUrlBulkImporter implements BulkImporter {
   constructor(

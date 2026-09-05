@@ -1,8 +1,8 @@
 import type * as PrismaClient from '../../../database/prisma-client/client.js';
+import { ByteUtils } from '@spraxdev/node-commons/util';
 import { singleton } from 'tsyringe';
 import MinecraftProfileCache from '../../../minecraft/profile/MinecraftProfileCache.js';
 import MinecraftProfileService from '../../../minecraft/profile/MinecraftProfileService.js';
-import ByteUtils from '../../../util/ByteUtils.js';
 import PayloadProcessor from './PayloadProcessor.js';
 
 @singleton()
