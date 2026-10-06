@@ -16,7 +16,7 @@ on:
 
 jobs:
   tests:
-    name: Tests + SonarCloud
+    name: Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -47,8 +47,47 @@ jobs:
       - name: Run the tests
         run: xvfb-run npm run test:ci
 
-      - name: Run SonarCloud analysis
+      - name: Upload coverage report
         if: '!cancelled()'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/lcov.info
+          if-no-files-found: ignore
+
+  sonarcloud:
+    name: SonarCloud
+    needs: tests
+    if: '!cancelled()'
+    runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        if: env.SONAR_TOKEN != ''
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        if: env.SONAR_TOKEN != ''
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install project dependencies for type resolution
+        if: env.SONAR_TOKEN != ''
+        run: npm ci --ignore-scripts && npm run prisma:generate
+
+      - name: Download coverage report
+        if: env.SONAR_TOKEN != ''
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+
+      - name: Run SonarCloud analysis
+        if: env.SONAR_TOKEN != ''
         uses: SonarSource/sonarqube-scan-action@v6
         with:
           args: >

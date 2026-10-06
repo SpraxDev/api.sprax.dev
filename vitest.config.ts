@@ -37,6 +37,7 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
       reportsDirectory: './coverage/',
+      reportOnFailure: true,
 
       include: [
         'src/**/*.ts',
