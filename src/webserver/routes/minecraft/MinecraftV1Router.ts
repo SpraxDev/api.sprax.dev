@@ -360,7 +360,7 @@ export default class MinecraftV1Router implements Router {
       throw ApiV1BadRequestError.missingOrInvalidQueryParameter('size', 'size >= 8 and size <= 1024');
     }
 
-    const result = parseInt(input, 10);
+    const result = Number.parseInt(input, 10);
     if (result < 8 || result > 1024) {
       throw ApiV1BadRequestError.missingOrInvalidQueryParameter('size', 'size >= 8 and size <= 1024');
     }

@@ -142,7 +142,7 @@ export default class MinecraftV2Router implements Router {
         throw new BadRequestError(`Expected a number but got ${JSON.stringify(input)}`);
       }
 
-      const result = parseInt(input, 10);
+      const result = Number.parseInt(input, 10);
       if (Number.isFinite(result)) {
         return result;
       }

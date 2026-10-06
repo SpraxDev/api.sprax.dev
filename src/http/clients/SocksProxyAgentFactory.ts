@@ -26,7 +26,7 @@ export default class SocksProxyAgentFactory {
 
     return async (options, callback): Promise<void> => {
       const destinationIp = options.hostname;
-      const destinationPort = parseInt(options.port, 10) || SocksProxyAgentFactory.determineDefaultPort(options.protocol);
+      const destinationPort = Number.parseInt(options.port, 10) || SocksProxyAgentFactory.determineDefaultPort(options.protocol);
 
       try {
         if (!(await this.unicastOnlyDnsResolver.resolvesToUnicastIp(destinationIp))) {

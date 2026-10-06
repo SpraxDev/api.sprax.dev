@@ -70,11 +70,11 @@ export default class LegacyServerStatusPinger extends AbstractMinecraftServerPin
       .toString('utf-16le')
       .split('\0');
 
-    const protocolVersion = parseInt(parsedData[0], 10);
+    const protocolVersion = Number.parseInt(parsedData[0], 10);
     const minecraftServerVersion = parsedData[1];
     const messageOfTheDay = parsedData[2];
-    const currentPlayers = parseInt(parsedData[3], 10);
-    const maxPlayers = parseInt(parsedData[4], 10);
+    const currentPlayers = Number.parseInt(parsedData[3], 10);
+    const maxPlayers = Number.parseInt(parsedData[4], 10);
 
     return {
       version: {

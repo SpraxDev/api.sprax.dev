@@ -16,7 +16,7 @@ export default class AppConfiguration {
   constructor() {
     this.config = this.deepFreeze({
       serverInterface: process.env.SPRAXAPI_SERVER_INTERFACE ?? '0.0.0.0',
-      serverPort: parseInt(process.env.SPRAXAPI_SERVER_PORT ?? '', 10) || 8087,
+      serverPort: Number.parseInt(process.env.SPRAXAPI_SERVER_PORT ?? '', 10) || 8087,
       proxyServerUris: process.env.PROXY_SERVER_URIS ?? '',
       questDbMetricsConfig: process.env.QUESTDB_METRICS_CONFIG ?? '',
 

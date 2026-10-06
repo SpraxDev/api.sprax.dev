@@ -64,7 +64,7 @@ export default class ProxyServerConfigurationProvider {
         socksProxyOptions = {
           version: parsedUri.protocol === 'socks5:' ? 5 : 4,
           host: proxyHost,
-          port: parsedUri.port ? parseInt(parsedUri.port, 10) : undefined,
+          port: parsedUri.port ? Number.parseInt(parsedUri.port, 10) : undefined,
 
           timeout: 3000,
         };

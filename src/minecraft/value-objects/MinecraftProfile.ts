@@ -43,7 +43,7 @@ export default class MinecraftProfile {
   }
 
   determineDefaultSkin(): DefaultSkin {
-    const unevenJavaHashCode = ((parseInt(this.id[7], 16) ^ parseInt(this.id[15], 16) ^ parseInt(this.id[23], 16) ^ parseInt(this.id[31], 16)) & 1) == 1;
+    const unevenJavaHashCode = ((Number.parseInt(this.id[7], 16) ^ Number.parseInt(this.id[15], 16) ^ Number.parseInt(this.id[23], 16) ^ Number.parseInt(this.id[31], 16)) & 1) == 1;
     return unevenJavaHashCode ? 'alex' : 'steve';
   }
 

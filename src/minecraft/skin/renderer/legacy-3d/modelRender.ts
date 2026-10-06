@@ -400,16 +400,16 @@ function modelFileToBufferData(filename: string): { indexBuffer: number[], verte
     if (line.startsWith('v ')) {
       const position: string[] = line.substring(2).trim().split(' ');
       const pos: vec4 = { x: 0, y: 0, z: 0, w: 1 };
-      pos.x = (position[0] != null && position[0].length) ? parseFloat(position[0]) : 0;
-      pos.y = (position[1] != null && position[1].length) ? parseFloat(position[1]) : 0;
-      pos.z = (position[2] != null && position[2].length) ? parseFloat(position[2]) : 0;
-      pos.w = (position[3] != null && position[3].length) ? parseFloat(position[3]) : 1;
+      pos.x = (position[0] != null && position[0].length) ? Number.parseFloat(position[0]) : 0;
+      pos.y = (position[1] != null && position[1].length) ? Number.parseFloat(position[1]) : 0;
+      pos.z = (position[2] != null && position[2].length) ? Number.parseFloat(position[2]) : 0;
+      pos.w = (position[3] != null && position[3].length) ? Number.parseFloat(position[3]) : 1;
       positions.push(pos);
     } else if (line.startsWith('vt ')) {
       const texCoord: string[] = line.substring(3).trim().split(' ');
       const tex: vec2 = { x: 0, y: 0 };
-      tex.x = (texCoord[0] != null && texCoord[0].length) ? parseFloat(texCoord[0]) : 0;
-      tex.y = (texCoord[1] != null && texCoord[1].length) ? parseFloat(texCoord[1]) : 0;
+      tex.x = (texCoord[0] != null && texCoord[0].length) ? Number.parseFloat(texCoord[0]) : 0;
+      tex.y = (texCoord[1] != null && texCoord[1].length) ? Number.parseFloat(texCoord[1]) : 0;
       texCoords.push(tex);
     } else if (line.startsWith('f ')) {
       const face: string[] = line.substring(2).split(' ');
@@ -418,9 +418,9 @@ function modelFileToBufferData(filename: string): { indexBuffer: number[], verte
       for (const vertex of face) {
         const vertexElements = vertex.split('/');
         const vertexObj: Vertex = { position: { x: 0, y: 0, z: 0, w: 1 }, texCoord: { x: 0, y: 0 } };
-        vertexObj.position = getOfArray(positions, parseInt(vertexElements[0], 10));
+        vertexObj.position = getOfArray(positions, Number.parseInt(vertexElements[0], 10));
         if (vertexElements[1] != null && vertexElements[1].length > 0) {
-          vertexObj.texCoord = getOfArray(texCoords, parseInt(vertexElements[1], 10));
+          vertexObj.texCoord = getOfArray(texCoords, Number.parseInt(vertexElements[1], 10));
         }
         vertices.push(vertexObj);
       }
