@@ -1,5 +1,4 @@
 import * as Sentry from '@sentry/node';
-import Os from 'node:os';
 import { getAppInfo, IS_PRODUCTION } from './constants.js';
 import { HttpError } from './webserver/errors/HttpErrors.js';
 
@@ -18,35 +17,24 @@ import { HttpError } from './webserver/errors/HttpErrors.js';
     environment: IS_PRODUCTION ? 'production' : 'development',
     release: `${appInfo.name}@${appInfo.version}`,
 
-    tracesSampleRate: 0.0,
-    profilesSampleRate: 0.0,
-
-    maxBreadcrumbs: 50,
-    initialScope: {
-      contexts: {
-        Machine: {
-          hostname: Os.hostname(),
-          os_type: Os.type(),
-          os_release: Os.release(),
-
-          cpus: Os.cpus().length,
-          memory_total: (Os.totalmem() / 1024 / 1024 / 1024).toFixed(2) + ' GiB',
-          memory_free: null,
-        },
+    dataCollection: {
+      userInfo: false,
+      cookies: false,
+      httpHeaders: {
+        request: { deny: ['forwarded', '-ip', 'remote-', 'via', '-user'] },
+        response: { deny: ['forwarded', '-ip', 'remote-', 'via', '-user'] },
       },
+      httpBodies: [],
+      urlQueryParams: true,
+      genAI: { inputs: false, outputs: false },
+      databaseQueryData: false,
+      graphQL: { document: false, variables: false },
     },
 
-    defaultIntegrations: false,
+    maxBreadcrumbs: 50,
+    tracePropagationTargets: [],
+
     integrations: [
-      Sentry.onUncaughtExceptionIntegration(),
-      Sentry.onUnhandledRejectionIntegration(),
-      Sentry.functionToStringIntegration(),
-      Sentry.contextLinesIntegration(),
-      Sentry.eventFiltersIntegration(),
-      Sentry.linkedErrorsIntegration(),
-      Sentry.httpIntegration(),
-      Sentry.consoleIntegration(),
-      Sentry.prismaIntegration(),
       Sentry.fastifyIntegration({
         shouldHandleError(err): boolean {
           if (err instanceof HttpError) {
@@ -56,13 +44,5 @@ import { HttpError } from './webserver/errors/HttpErrors.js';
         },
       }),
     ],
-
-    beforeSend(event) {
-      if (event.contexts && typeof event.contexts['Machine'] == 'object') {
-        event.contexts['Machine'].memory_free = (Os.freemem() / 1024 / 1024 / 1024).toFixed(2) + ' GiB';
-      }
-
-      return event;
-    },
   });
 })();

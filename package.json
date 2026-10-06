@@ -50,7 +50,7 @@
     "prisma:migrate:dev": "prisma migrate dev && npm run prisma:generate"
   },
   "engines": {
-    "node": ">=22.0.0",
+    "node": ">=22.12.0",
     "npm": ">=10.0.0"
   },
   "dependencies": {
@@ -58,7 +58,7 @@
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "@questdb/nodejs-client": "^4.2.0",
-    "@sentry/node": "^10.76.1",
+    "@sentry/node": "^11.4.0",
     "@spraxdev/node-commons": "github:SpraxDev/Node-Commons#f9c653acd4db54293d17881e3469811c65b24fd6",
     "fastify": "^5.12.5",
     "fastify-type-provider-zod": "^7.0.0",
