@@ -18,6 +18,9 @@ jobs:
   tests:
     name: Tests
     runs-on: ubuntu-latest
+    concurrency:
+      group: acceptance-tests
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v7
         with:
