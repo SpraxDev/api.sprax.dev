@@ -53,7 +53,7 @@ jobs:
         with:
           args: >
             -Dsonar.organization=spraxdev
-            -Dsonar.projectKey=SpraxDev_Api.Sprax2013.de
+            -Dsonar.projectKey=SpraxDev_api.sprax.dev
             -Dsonar.sourceEncoding=UTF-8
             -Dsonar.typescript.tsconfigPaths=tsconfig.json
             -Dsonar.javascript.lcov.reportPaths=./coverage/lcov.info
