@@ -54,25 +54,25 @@
     "npm": ">=10.0.0"
   },
   "dependencies": {
-    "@fastify/swagger": "^9.9.1",
-    "@prisma/adapter-pg": "^7.10.0",
-    "@prisma/client": "^7.10.0",
+    "@fastify/swagger": "^9.9.2",
+    "@prisma/adapter-pg": "^7.10.1",
+    "@prisma/client": "^7.10.1",
     "@questdb/nodejs-client": "^4.2.0",
-    "@sentry/node": "^11.4.0",
-    "@spraxdev/node-commons": "github:SpraxDev/Node-Commons#f9c653acd4db54293d17881e3469811c65b24fd6",
-    "fastify": "^5.12.5",
+    "@sentry/node": "^11.10.0",
+    "@spraxdev/node-commons": "github:SpraxDev/Node-Commons#9794dd854e81a8bea792a447869157d03e4d6d9e",
+    "fastify": "^5.12.7",
     "fastify-type-provider-zod": "^7.0.0",
     "gl": "^8.1.6",
     "ipaddr.js": "^2.5.0",
     "mri": "^1.2.0",
-    "prisma": "^7.10.0",
+    "prisma": "^7.10.1",
     "reflect-metadata": "^0.2.2",
     "sharp": "^0.35.5",
     "socks": "^2.8.10",
     "tsyringe": "^4.10.0",
-    "undici": "^8.11.2",
+    "undici": "^8.12.3",
     "xxhash-addon": "^2.1.0",
-    "zod": "^4.6.5"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@swc-node/register": "^1.12.1",
@@ -80,16 +80,16 @@
     "@types/gl": "^6.0.5",
     "@types/node": "^22.20.5",
     "@types/webgl-ext": "^0.0.37",
-    "@vitest/coverage-v8": "^5.0.3",
+    "@vitest/coverage-v8": "^5.0.5",
     "typescript": "^6.0.3",
-    "vitest": "^5.0.3",
+    "vitest": "^5.0.5",
     "vitest-mock-extended": "^5.1.1"
   },
   "allowScripts": {
     "gl@8.1.6": true,
     "xxhash-addon@2.1.0": true,
-    "@swc/core@1.16.13": true,
-    "prisma@7.10.0": true,
-    "@prisma/engines@7.10.0": true
+    "@swc/core@1.16.20": true,
+    "prisma@7.10.1": true,
+    "@prisma/engines@7.10.1": true
   }
 }
